@@ -4,7 +4,13 @@ public class Dandy.Util {
 		double x;
 		double y;
 	}
-	
+
+	public struct Point3 {
+		double x;
+		double y;
+		double z;
+	}
+
 	public struct Bounds {
 		double x1;
 		double y1;
@@ -14,6 +20,14 @@ public class Dandy.Util {
 
 	public static double random_sym(double x) {
 		return Random.double_range(-x, x);
+	}
+
+	public static double max(double x, double y) {
+		if (x > y) {
+			return x;
+		} else {
+			return y;
+		}
 	}
 
 	public static double min(double x, double y) {
@@ -46,7 +60,7 @@ public class Dandy.Util {
 		return Math.sqrt(delta_x * delta_x + delta_y * delta_y);
 	}
 
-	public static double length_3d(double delta_x, double delta_y, double delta_z) {
+	public static double length3(double delta_x, double delta_y, double delta_z) {
 		return Math.sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z);
 	}
 }
