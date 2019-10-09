@@ -195,7 +195,29 @@ public class Dandy.DrawLeaf {
 	}
 
 	public static Util.Bounds get_bounds(Params params) {
-		return Util.Bounds();
+		double slope_x = Math.cos(params.stem.angle);
+		double slope_y = -Math.sin(params.stem.angle);
+		double padding = 8;
+		double leaflet_padding =
+			(params.stem.diam
+				+ params.leaflets.width * (1 + params.leaflets.width_var))
+			* (1 + params.leaflets.width_var);
+		double x1 = -0.5 * params.stem.diam - leaflet_padding - padding;
+		double x2 = -x1;
+		double y_offset = params.stem.len * slope_y * Util.min(
+			1f / (4 * params.stem.droop),
+			1 - params.stem.droop);
+		double y1 = 0.5 * params.stem.diam + padding;
+		double y2 = y_offset - leaflet_padding - padding;
+		double x_offset = slope_x * params.stem.len;
+		if (slope_x < 0) {
+			x1 += x_offset;
+		} else {
+			x2 += x_offset;
+		}
+		return Util.Bounds() {
+			x1 = x1, y1 = y1, x2 = x2, y2 = y2
+		};
 	}
 
 	public static Util.Point get_root_pos() {
