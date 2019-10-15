@@ -33,6 +33,7 @@ public struct LeafParams {
 				seg_count = 64
 			},
 			leaflets = LeafletsParams() {
+				shade = random_sym(0.059),
 				count = leaflet_count,
 				len_var = 0.2,
 				width = leaflet_width,
@@ -55,8 +56,7 @@ public struct LeafParams {
 	}
 
 	public Bounds bounds() {
-		double slope_x = Math.cos(this.stem.angle);
-		double slope_y = -Math.sin(this.stem.angle);
+		Vector slope = Vector.polar(1, -this.stem.angle);
 		double padding = 8;
 		double leaflet_padding =
 			(this.stem.diam_start
@@ -64,28 +64,27 @@ public struct LeafParams {
 			* (1 + this.leaflets.width_var);
 		double x1 = -0.5 * this.stem.diam_start - leaflet_padding - padding;
 		double x2 = -x1;
-		double y_offset = this.stem.len * slope_y * min(
+		double y_offset = this.stem.len * slope.y * double.min(
 			1f / (4 * this.stem.droop),
 			1 - this.stem.droop);
-		double y1 = 0.5 * this.stem.diam_start + padding;
-		double y2 = y_offset - leaflet_padding - padding;
-		double x_offset = slope_x * this.stem.len;
-		if (slope_x < 0) {
+		double y1 = y_offset - leaflet_padding - padding;
+		double y2 = 0.5 * this.stem.diam_start + padding;
+		double x_offset = slope.x * this.stem.len;
+		if (slope.x < 0) {
 			x1 += x_offset;
 		} else {
 			x2 += x_offset;
 		}
-		return Bounds() {
-			x1 = x1, y1 = y1, x2 = x2, y2 = y2
-		};
+		return Bounds(x1, y1, x2, y2);
 	}
 
-	public static Point root_pos() {
-		return Point() { x = 0, y = 0 };
+	public static Vector root_pos() {
+		return Vector(0, 0);
 	}
 }
 
 public struct LeafletsParams {
+	double shade;
 	uint count;
 	double len_var;
 	double width;
@@ -221,7 +220,7 @@ public void draw_leaf(
 		Cairo.Context ctx,
 		LeafParams leaf,
 		LeafDetails details) {
-	Point root_pos = LeafParams.root_pos();
+	Vector root_pos = LeafParams.root_pos();
 	ctx.save();
 	ctx.translate(root_pos.x, root_pos.y);
 	Draw.draw_leaflets(ctx,
@@ -243,7 +242,7 @@ public void draw_leaflets(
 		LeafletDetails[] leaflet_right_details,
 		VeinDetails[] vein_details) {
 	Orbit stem_orbit = StemParams.orbit(stem);
-	Point start = stem_orbit
+	Vector start = stem_orbit
 		.offset_fixed(leaflet_left_details[0].u_prev)
 		.at(leaflet_left_details[0].t_prev);
 
@@ -260,19 +259,19 @@ public void draw_leaflets(
 		{
 			double t_shift = leaflets.peak_strength * (t1 - t0);
 			double u_shift = leaflets.peak_strength * (u1 - u0);
-			Point p0 = stem_orbit.offset_fixed(u0).at(t0);
-			Point p1 = stem_orbit.offset_fixed(u0 - u_shift).at(t0);
-			Point p2 = stem_orbit.offset_fixed(u1).at(t1 - t_shift);
-			Point p3 = stem_orbit.offset_fixed(u1).at(t1);
+			Vector p0 = stem_orbit.offset_fixed(u0).at(t0);
+			Vector p1 = stem_orbit.offset_fixed(u0 - u_shift).at(t0);
+			Vector p2 = stem_orbit.offset_fixed(u1).at(t1 - t_shift);
+			Vector p3 = stem_orbit.offset_fixed(u1).at(t1);
 			ctx.curve_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 		}
 		{
 			double t_shift = leaflets.peak_strength * (t2 - t1);
 			double u_shift = leaflets.peak_strength * (u2 - u1);
-			Point p0 = stem_orbit.offset_fixed(u1).at(t1);
-			Point p1 = stem_orbit.offset_fixed(u1).at(t1 + t_shift);
-			Point p2 = stem_orbit.offset_fixed(u2 - u_shift).at(t2);
-			Point p3 = stem_orbit.offset_fixed(u2).at(t2);
+			Vector p0 = stem_orbit.offset_fixed(u1).at(t1);
+			Vector p1 = stem_orbit.offset_fixed(u1).at(t1 + t_shift);
+			Vector p2 = stem_orbit.offset_fixed(u2 - u_shift).at(t2);
+			Vector p3 = stem_orbit.offset_fixed(u2).at(t2);
 			ctx.curve_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 		}
 	}
@@ -284,11 +283,11 @@ public void draw_leaflets(
 		double t1 = 1;
 		double u1 = 0;
 		double u_shift = leaflets.peak_strength * (u1 - u0);
-		Point p0 = stem_orbit.offset_fixed(u0).at(t0);
-		Point p1 = stem_orbit.offset_fixed(u0 + u_shift).at(t0);
-		Point p2 = stem_orbit.offset_fixed(
+		Vector p0 = stem_orbit.offset_fixed(u0).at(t0);
+		Vector p1 = stem_orbit.offset_fixed(u0 + u_shift).at(t0);
+		Vector p2 = stem_orbit.offset_fixed(
 			leaflets.tip_strength * leaflets.width).at(t1);
-		Point p3 = stem_orbit.offset_fixed(u1).at(t1);
+		Vector p3 = stem_orbit.offset_fixed(u1).at(t1);
 		ctx.curve_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 	}
 	bool first = true;
@@ -302,10 +301,10 @@ public void draw_leaflets(
 		{
 			double t_shift = leaflets.peak_strength * (t1 - t0);
 			double u_shift = leaflets.peak_strength * (u1 - u0);
-			Point p0 = stem_orbit.offset_fixed(-u0).at(t0);
-			Point p1 = stem_orbit.offset_fixed(-u0).at(t0 + t_shift);
-			Point p2 = stem_orbit.offset_fixed(-u1 + u_shift).at(t1);
-			Point p3 = stem_orbit.offset_fixed(-u1).at(t1);
+			Vector p0 = stem_orbit.offset_fixed(-u0).at(t0);
+			Vector p1 = stem_orbit.offset_fixed(-u0).at(t0 + t_shift);
+			Vector p2 = stem_orbit.offset_fixed(-u1 + u_shift).at(t1);
+			Vector p3 = stem_orbit.offset_fixed(-u1).at(t1);
 			if (first) {
 				p1 = stem_orbit.offset_fixed(
 					-u0 - leaflets.tip_strength * leaflets.width)
@@ -316,10 +315,10 @@ public void draw_leaflets(
 		{
 			double t_shift = leaflets.peak_strength * (t2 - t1);
 			double u_shift = leaflets.peak_strength * (u2 - u1);
-			Point p0 = stem_orbit.offset_fixed(-u1).at(t1);
-			Point p1 = stem_orbit.offset_fixed(-u1 + u_shift).at(t1);
-			Point p2 = stem_orbit.offset_fixed(-u2).at(t2 - t_shift);
-			Point p3 = stem_orbit.offset_fixed(-u2).at(t2);
+			Vector p0 = stem_orbit.offset_fixed(-u1).at(t1);
+			Vector p1 = stem_orbit.offset_fixed(-u1 + u_shift).at(t1);
+			Vector p2 = stem_orbit.offset_fixed(-u2).at(t2 - t_shift);
+			Vector p3 = stem_orbit.offset_fixed(-u2).at(t2);
 			ctx.curve_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 		}
 		first = false;
@@ -332,10 +331,10 @@ public void draw_leaflets(
 		double t1 = 0;
 		double u1 = 0.5 * stem.diam_start;
 		double t_shift = leaflets.peak_strength * t0;
-		Point p0 = stem_orbit.offset_fixed(-u0).at(t0);
-		Point p1 = stem_orbit.offset_fixed(-u0).at(t0 + t_shift);
-		Point p2 = stem_orbit.offset_fixed(-u1).at(t1 + t_shift);
-		Point p3 = stem_orbit.offset_fixed(-u1).at(t1);
+		Vector p0 = stem_orbit.offset_fixed(-u0).at(t0);
+		Vector p1 = stem_orbit.offset_fixed(-u0).at(t0 + t_shift);
+		Vector p2 = stem_orbit.offset_fixed(-u1).at(t1 + t_shift);
+		Vector p3 = stem_orbit.offset_fixed(-u1).at(t1);
 		ctx.curve_to(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
 	}
 
@@ -343,7 +342,7 @@ public void draw_leaflets(
 
 	// Main fill color of the leaf.
 	ctx.save();
-	double color_shift = random_sym(0.059);
+	double color_shift = leaflets.shade;
 	double stem_slope_x = Math.cos(stem.angle);
 	double stem_slope_y = -Math.sin(stem.angle);
 	Cairo.Pattern grad = new Cairo.Pattern.linear(
@@ -414,9 +413,9 @@ public void draw_veins(
 		double u0 = 0;
 		double u1 = u0;
 		double u2 = vein_detail.dir * vein_detail.len;
-		Point p0 = stem_orbit.offset_fixed(u0).at(t0);
-		Point p1 = stem_orbit.offset_fixed(u1).at(t1);
-		Point p2 = stem_orbit.offset_fixed(u2).at(t2);
+		Vector p0 = stem_orbit.offset_fixed(u0).at(t0);
+		Vector p1 = stem_orbit.offset_fixed(u1).at(t1);
+		Vector p2 = stem_orbit.offset_fixed(u2).at(t2);
 		ctx.move_to(p0.x, p0.y);
 		ctx.curve_to(p1.x, p1.y, p1.x, p1.y, p2.x, p2.y);
 	}

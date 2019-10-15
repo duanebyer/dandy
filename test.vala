@@ -1,6 +1,8 @@
-using Dandy.Draw;
+namespace Dandy {
 
-public class Dandy.Background : Clutter.Actor {
+using Draw;
+
+public class Test : Clutter.Actor {
 
 	private Clutter.Canvas _canvas;
 	private FluffParams _fluff_params;
@@ -13,7 +15,7 @@ public class Dandy.Background : Clutter.Actor {
 	private GrassDetails _grass_details;
 	private TimeoutSource _timer;
 
-	public Background() {
+	public Test() {
 		Object();
 	}
 
@@ -44,43 +46,43 @@ public class Dandy.Background : Clutter.Actor {
 		ctx.set_source_rgb(1, 0, 0);
 		ctx.translate(100, 300);
 		ctx.rectangle(
-			fluff_bounds.x1,
-			fluff_bounds.y1,
-			fluff_bounds.x2 - fluff_bounds.x1,
-			fluff_bounds.y2 - fluff_bounds.y1);
+			fluff_bounds.p1.x,
+			fluff_bounds.p1.y,
+			fluff_bounds.width(),
+			fluff_bounds.height());
 		ctx.stroke();
 
 		ctx.translate(200, 0);
 		ctx.rectangle(
-			stalk_bounds.x1,
-			stalk_bounds.y1,
-			stalk_bounds.x2 - stalk_bounds.x1,
-			stalk_bounds.y2 - stalk_bounds.y1);
+			stalk_bounds.p1.x,
+			stalk_bounds.p1.y,
+			stalk_bounds.width(),
+			stalk_bounds.height());
 		ctx.stroke();
 
 		ctx.translate(200, 0);
 		ctx.rectangle(
-			leaf_bounds.x1,
-			leaf_bounds.y1,
-			leaf_bounds.x2 - leaf_bounds.x1,
-			leaf_bounds.y2 - leaf_bounds.y1);
+			leaf_bounds.p1.x,
+			leaf_bounds.p1.y,
+			leaf_bounds.width(),
+			leaf_bounds.height());
 		ctx.stroke();
 
 		ctx.translate(200, 0);
 		ctx.rectangle(
-			grass_bounds.x1,
-			grass_bounds.y1,
-			grass_bounds.x2 - grass_bounds.x1,
-			grass_bounds.y2 - grass_bounds.y1);
+			grass_bounds.p1.x,
+			grass_bounds.p1.y,
+			grass_bounds.width(),
+			grass_bounds.height());
 		ctx.stroke();
 
 		ctx.restore();
 	}
 
 	private void _onTimer() {
-		//this._fluff_params.tilt += 0.005 * Math.PI;
-		//this._fluff_params.roll += 0.005 * Math.PI;
-		//this._canvas.invalidate();
+		this._fluff_params.orient.tilt += 0.005 * Math.PI;
+		this._fluff_params.orient.roll += 0.005 * Math.PI;
+		this._canvas.invalidate();
 	}
 
 	construct {
@@ -116,5 +118,7 @@ public class Dandy.Background : Clutter.Actor {
 
 		this.set_content(this._canvas);
 	}
+}
+
 }
 

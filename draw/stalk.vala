@@ -45,8 +45,7 @@ public struct StalkParams {
 	}
 
 	public Bounds bounds() {
-		double slope_x = Math.cos(this.stem.angle);
-		double slope_y = -Math.sin(this.stem.angle);
+		Vector slope = Vector.polar(1, -this.stem.angle);
 		double padding = 8;
 		double head_padding =
 			0.5 * this.head.width
@@ -55,34 +54,31 @@ public struct StalkParams {
 			+ this.head.bracts.max_offset;
 		double x1 = -0.5 * this.stem.diam_start - head_padding - padding;
 		double x2 = -x1;
-		double y_offset = this.stem.len * slope_y * min(
+		double y_offset = this.stem.len * slope.y * double.min(
 			1f / (4 * this.stem.droop),
 			1 - this.stem.droop);
-		double y1 = 0.5 * this.stem.diam_start + padding;
-		double y2 = y_offset
+		double y1 = y_offset
 			- 0.5 * this.head.width
 			- 0.5 * this.head.height
 			- padding;
-		double x_offset = slope_x * this.stem.len;
-		if (slope_x < 0) {
+		double y2 = 0.5 * this.stem.diam_start + padding;
+		double x_offset = slope.x * this.stem.len;
+		if (slope.x < 0) {
 			x1 += x_offset;
 		} else {
 			x2 += x_offset;
 		}
-		return Bounds() {
-			x1 = x1, y1 = y1, x2 = x2, y2 = y2
-		};
+		return Bounds(x1, y1, x2, y2);
 	}
 
-	public static Point root_pos() {
-		return Point() { x = 0, y = 0 };
+	public static Vector root_pos() {
+		return Vector(0, 0);
 	}
 
-	public static Point head_pos(StemParams stem) {
-		return Point() {
-			x = Math.cos(stem.angle) * stem.len,
-			y = -Math.sin(stem.angle) * stem.len * (1 - stem.droop)
-		};
+	public static Vector head_pos(StemParams stem) {
+		return Vector(
+			Math.cos(stem.angle) * stem.len,
+			-Math.sin(stem.angle) * stem.len * (1 - stem.droop));
 	}
 
 	public static double head_angle(StemParams stem) {
@@ -101,11 +97,10 @@ public struct StemParams {
 	uint seg_count;
 
 	public static Orbit orbit(StemParams stem) {
-		double slope_x = Math.cos(stem.angle);
-		double slope_y = -Math.sin(stem.angle);
+		Vector slope = Vector.polar(1, -stem.angle);
 		double len = stem.len;
 		double droop = stem.droop;
-		return Orbit.line_with_droop(slope_x, slope_y, len, droop);
+		return Orbit.line_with_droop(slope, len, droop);
 	}
 }
 
@@ -143,14 +138,10 @@ public struct StalkDetails {
 
 public struct BractDetails {
 	double shade;
-	double x0;
-	double y0;
-	double x1;
-	double y1;
-	double x2;
-	double y2;
-	double x3;
-	double y3;
+	Vector p0;
+	Vector p1;
+	Vector p2;
+	Vector p3;
 
 	public static BractDetails[] generate(HeadParams head) {
 		BractDetails[] details = new BractDetails[head.bracts.count];
@@ -170,10 +161,10 @@ public struct BractDetails {
 				- 0.2 * head.bracts.len * Random.double_range(0.9, 1.1);
 			details[bract_idx] = BractDetails() {
 				shade = Random.double_range(0.7, 1),
-				x0 = x0, y0 = y0,
-				x1 = x1, y1 = y1,
-				x2 = x2, y2 = y2,
-				x3 = x3, y3 = y3
+				p0 = Vector(x0, y0),
+				p1 = Vector(x1, y1),
+				p2 = Vector(x2, y2),
+				p3 = Vector(x3, y3)
 			};
 		}
 		return details;
@@ -185,8 +176,8 @@ public void draw_stalk(
 		Cairo.Context ctx,
 		StalkParams stalk,
 		StalkDetails stalk_details) {
-	Point root_pos = StalkParams.root_pos();
-	Point head_pos = StalkParams.head_pos(stalk.stem);
+	Vector root_pos = StalkParams.root_pos();
+	Vector head_pos = StalkParams.head_pos(stalk.stem);
 	double head_angle = StalkParams.head_angle(stalk.stem);
 
 	ctx.save();
@@ -205,9 +196,8 @@ public void draw_stalk(
 public void draw_stem(
 		Cairo.Context ctx,
 		StemParams stem) {
-	double slope_x = Math.cos(stem.angle);
-	double slope_y = -Math.sin(stem.angle);
-	Point head_pos = StalkParams.head_pos(stem);
+	Vector slope = Vector.polar(1, -stem.angle);
+	Vector head_pos = StalkParams.head_pos(stem);
 	Orbit stem_orbit = StemParams.orbit(stem);
 	Orbit.OffsetParameterization offset = (t) => lerp(
 		0.5 * stem.diam_start,
@@ -228,14 +218,8 @@ public void draw_stem(
 	ctx.save();
 	double grad_start_excess = 128;
 	double grad_end_excess = 128;
-	Point grad_start = Point() {
-		x = -grad_start_excess * slope_x,
-		y = -grad_start_excess * slope_y
-	};
-	Point grad_end = Point() {
-		x = head_pos.x + grad_end_excess * slope_x,
-		y = head_pos.y + grad_end_excess * slope_y
-	};
+	Vector grad_start = slope.scale(-grad_start_excess);
+	Vector grad_end = slope.scale(grad_end_excess).add(head_pos);
 	Cairo.Pattern grad = new Cairo.Pattern.linear(
 		grad_start.x, grad_start.y,
 		grad_end.x, grad_end.y);
@@ -248,14 +232,8 @@ public void draw_stem(
 	// Light on the one side.
 	ctx.save();
 	double light_grad_excess = 0.5 * stem.diam_start;
-	Point light_grad_start = Point() {
-		x = light_grad_excess * slope_y,
-		y = -light_grad_excess * slope_x
-	};
-	Point light_grad_end = Point() {
-		x = -light_grad_excess * slope_y,
-		y = light_grad_excess * slope_x
-	};
+	Vector light_grad_start = slope.perp().negate().scale(light_grad_excess);
+	Vector light_grad_end = slope.perp().scale(light_grad_excess);
 	Cairo.Pattern light_grad = new Cairo.Pattern.linear(
 		light_grad_start.x, light_grad_start.y,
 		light_grad_end.x, light_grad_end.y);
@@ -315,10 +293,10 @@ public void draw_bracts(
 	ctx.save();
 	foreach (BractDetails bract_detail in bract_details) {
 		Orbit bract_orbit = Orbit.cubic_spline(
-			bract_detail.x0, bract_detail.y0,
-			bract_detail.x1, bract_detail.y1,
-			bract_detail.x2, bract_detail.y2,
-			bract_detail.x3, bract_detail.y2);
+			bract_detail.p0,
+			bract_detail.p1,
+			bract_detail.p2,
+			bract_detail.p3);
 		Orbit.OffsetParameterization offset = (t) =>
 			lerp(0.5 * head.bracts.base_width, 0, t);
 		Orbit offset_bract_orbit =

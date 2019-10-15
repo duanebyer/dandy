@@ -1,7 +1,9 @@
-// TODO: Rename this class. Trajectory?
-public class Dandy.Util.Orbit : Object {
+namespace Dandy.Util {
 
-	public delegate Util.Point Parameterization(double t);
+// TODO: Rename this class. Trajectory?
+public class Orbit : Object {
+
+	public delegate Vector Parameterization(double t);
 	public delegate double OffsetParameterization(double t);
 
 	private Parameterization _f;
@@ -13,45 +15,32 @@ public class Dandy.Util.Orbit : Object {
 	// This is a parabola parametrized in an odd way that's useful for a lot of
 	// the drawing done by us. It's like a line that "droops" below a true line
 	// by some fractional amount.
-	public static Orbit line_with_droop(
-			double slope_x,
-			double slope_y,
-			double length,
-			double droop) {
-		return new Orbit((t) => Util.Point() {
-			x = slope_x * length * t,
-			y = slope_y * length * t * (1 - droop * t)
-		});
+	public static Orbit line_with_droop(Vector slope, double length, double droop) {
+		return new Orbit((t) => Vector(
+			slope.x * length * t,
+			slope.y * length * t * (1 - droop * t)));
 	}
 
-	public static Orbit cubic_spline(
-			double x0, double y0,
-			double x1, double y1,
-			double x2, double y2,
-			double x3, double y3) {
+	public static Orbit cubic_spline(Vector p0, Vector p1, Vector p2, Vector p3) {
 		return new Orbit((t) => {
 			double tp = 1 - t;
 			double a = tp * tp * tp;
 			double b = 3 * t * tp * tp;
 			double c = 3 * t * t * tp;
 			double d = t * t * t;
-			double x = a * x0 + b * x1 + c * x2 + d * x3;
-			double y = a * y0 + b * y1 + c * y2 + d * y3;
-			return Util.Point() { x = x, y = y };
+			return p0.scale(a).add(p1.scale(b)).add(p2.scale(c)).add(p3.scale(d));
 		});
 	}
 
-	public Util.Point at(double t) {
+	public Vector at(double t) {
 		return this._f(t);
 	}
 
-	public Orbit set_origin(double origin_x, double origin_y) {
-		Util.Point old_origin = this._f(0);
+	public Orbit set_origin(Vector origin) {
+		Vector old_origin = this._f(0);
 		return new Orbit((t) => {
-			Util.Point point = this._f(t);
-			point.x += origin_x - old_origin.x;
-			point.y += origin_y - old_origin.y;
-			return point;
+			Vector point = this._f(t);
+			return point.add(origin.sub(old_origin));
 		});
 	}
 
@@ -82,43 +71,34 @@ public class Dandy.Util.Orbit : Object {
 	public Orbit offset(OffsetParameterization offset_f) {
 		double delta = 1e-4;
 		return new Orbit((t) => {
-			Util.Point point = this._f(t);
-			Util.Point next_point = this._f(t + delta);
-			Util.Point prev_point = this._f(t - delta);
-			double offset_x = next_point.y - prev_point.y;
-			double offset_y = -(next_point.x - prev_point.x);
-			double offset_normalization = Util.length(offset_x, offset_y);
-			double offset_mag = offset_f(t);
-
-			if (offset_normalization != 0) {
-				point.x += offset_mag * offset_x / offset_normalization;
-				point.y += offset_mag * offset_y / offset_normalization;
+			Vector point = this._f(t);
+			Vector next_point = this._f(t + delta);
+			Vector prev_point = this._f(t - delta);
+			Vector offset = next_point.sub(prev_point).perp();
+			if (offset.norm() != 0) {
+				double offset_mag = offset_f(t);
+				point = point.add(offset.unit().scale(offset_mag));
 			}
-
 			return point;
 		});
 	}
 
 	public Orbit add(Orbit other) {
 		return new Orbit((t) => {
-			Util.Point point_a = this._f(t);
-			Util.Point point_b = other._f(t);
-			return Util.Point() {
-				x = point_a.x + point_b.x,
-				y = point_a.y + point_b.y
-			};
+			Vector point_a = this._f(t);
+			Vector point_b = other._f(t);
+			return point_a.add(point_b);
 		});
 	}
 
 	public Orbit subtract(Orbit other) {
 		return new Orbit((t) => {
-			Util.Point point_a = this._f(t);
-			Util.Point point_b = other._f(t);
-			return Util.Point() {
-				x = point_a.x - point_b.x,
-				y = point_a.y - point_b.y
-			};
+			Vector point_a = this._f(t);
+			Vector point_b = other._f(t);
+			return point_a.sub(point_b);
 		});
 	}
+}
+
 }
 

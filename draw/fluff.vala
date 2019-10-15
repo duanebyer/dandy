@@ -48,30 +48,28 @@ public struct FluffParams {
 			- padding;
 		double x2 = -x1;
 		double y1 =
-			0.5 * this.strands.ellipse_width * (1 + this.strands.len_var)
-			+ padding;
+			-0.5 * this.strands.ellipse_width * (1 + this.strands.len_var)
+			- padding;
 		double y2 = -y1;
 		double y_offset = (this.anchor.offset + this.strands.ellipse_offset)
 			* Math.sin(this.orient.tilt);
-		if (this.orient.tilt > 0) {
+		if (this.orient.tilt < 0) {
 			y1 += y_offset;
 		} else {
 			y2 += y_offset;
 		}
-		return Bounds() {
-			x1 = x1, y1 = y1, x2 = x2, y2 = y2
-		};
+		return Bounds(x1, y1, x2, y2);
 	}
 
-	public static Point seed_pos() {
-		return Point() { x = 0, y = 0 };
+	public static Vector seed_pos() {
+		return Vector(0, 0);
 	}
 
-	public static Point anchor_pos(
+	public static Vector anchor_pos(
 			OrientParams orient,
 			AnchorParams anchor) {
 		double anchor_y = anchor.offset * Math.sin(orient.tilt);
-		return Point() { x = 0, y = anchor_y };
+		return Vector(0, anchor_y);
 	}
 }
 
@@ -114,9 +112,7 @@ public struct FluffDetails {
 }
 
 public struct StrandDetails {
-	double x; // Coordinates of the end of the strand.
-	double y;
-	double z;
+	Vector3 pos; // Coordinates of the end of the strand.
 	double curvature; // Amount of deviation of center from straight line.
 
 	public static StrandDetails[] generate(StrandsParams strands) {
@@ -135,7 +131,7 @@ public struct StrandDetails {
 			double y = sx * Math.sin(phi) * Math.cos(theta);
 			double z = sz * Math.sin(theta);
 			details[strand_idx] = StrandDetails() {
-				x = x, y = y, z = z,
+				pos = Vector3(x, y, z),
 				curvature = random_sym(strands.curvature_var)
 			};
 		}
@@ -152,8 +148,8 @@ public void draw_fluff(
 
 	// The order to draw depends on the tilt. Either: seed, stalk, strands,
 	// anchor; or, strands, anchor, stalk, seed.
-	Point seed_pos = FluffParams.seed_pos();
-	Point anchor_pos = FluffParams.anchor_pos(fluff.orient, fluff.anchor);
+	Vector seed_pos = FluffParams.seed_pos();
+	Vector anchor_pos = FluffParams.anchor_pos(fluff.orient, fluff.anchor);
 	if (fluff.orient.tilt > -0.5 * Math.PI
 			&& fluff.orient.tilt < 0.5 * Math.PI) {
 		ctx.save();
@@ -217,8 +213,8 @@ private void draw_anchor_line(
 		OrientParams orient,
 		SeedParams seed,
 		AnchorParams anchor) {
-	Point seed_pos = FluffParams.seed_pos();
-	Point anchor_pos = FluffParams.anchor_pos(orient, anchor);
+	Vector seed_pos = FluffParams.seed_pos();
+	Vector anchor_pos = FluffParams.anchor_pos(orient, anchor);
 	double connection_y = 0.5 * seed.len * Math.sin(orient.tilt);
 	ctx.save();
 	ctx.new_path();
@@ -253,33 +249,27 @@ private void draw_strands(
 	ctx.save();
 	ctx.set_source_rgba(1, 1, 1, 0.2);
 	foreach (StrandDetails strand_detail in strand_details) {
-		double x =
-			strand_detail.x * Math.cos(orient.roll) +
-			strand_detail.y * Math.sin(orient.roll);
-		double y =
-			(strand_detail.z + strands.ellipse_offset) * Math.sin(orient.tilt) +
-			Math.cos(orient.tilt) * (
-				-strand_detail.x * Math.sin(orient.roll) +
-				strand_detail.y * Math.cos(orient.roll));
-		double len = length(x, y);
+		Vector strand_pos = strand_detail.pos
+			.add(Vector3.UNIT_Z.scale(strands.ellipse_offset))
+			.rotate(Vector3.UNIT_Z.scale(orient.roll))
+			.rotate(Vector3.UNIT_X.scale(orient.tilt))
+			.as_vector();
 
-		double base_delta_x = 0.5 * strands.base_diam * y / len;
-		double base_delta_y = -0.5 * strands.base_diam * x / len;
-
-		double curve = strand_detail.curvature;
-		double curve_x = 0.5 * x + curve * y / len;
-		double curve_y = 0.5 * y - curve * x / len;
+		Vector base_delta = strand_pos.perp().unit()
+			.scale(-0.5 * strands.base_diam);
+		Vector curve = strand_pos.scale(0.5)
+			.add(strand_pos.perp().unit().scale(-strand_detail.curvature));
 
 		ctx.new_path();
-		ctx.move_to(base_delta_x, base_delta_y);
+		ctx.move_to(base_delta.x, base_delta.y);
 		ctx.curve_to(
-			curve_x + 0.5 * base_delta_x, curve_y + 0.5 * base_delta_y,
-			curve_x + 0.5 * base_delta_x, curve_y + 0.5 * base_delta_y,
-			x, y);
+			curve.x + 0.5 * base_delta.x, curve.y + 0.5 * base_delta.y,
+			curve.x + 0.5 * base_delta.x, curve.y + 0.5 * base_delta.y,
+			strand_pos.x, strand_pos.y);
 		ctx.curve_to(
-			curve_x - 0.5 * base_delta_x, curve_y - 0.5 * base_delta_y,
-			curve_x - 0.5 * base_delta_x, curve_y - 0.5 * base_delta_y,
-			-base_delta_x, -base_delta_y);
+			curve.x - 0.5 * base_delta.x, curve.y - 0.5 * base_delta.y,
+			curve.x - 0.5 * base_delta.x, curve.y - 0.5 * base_delta.y,
+			-base_delta.x, -base_delta.y);
 		ctx.close_path();
 		ctx.fill();
 	}

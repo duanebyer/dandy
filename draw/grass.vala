@@ -30,30 +30,27 @@ public struct GrassParams {
 	}
 
 	public Bounds bounds() {
-		double slope_x = Math.cos(this.blade.angle);
-		double slope_y = -Math.sin(this.blade.angle);
+		Vector slope = Vector.polar(1, -this.blade.angle);
 		double padding = 4;
 		double x1 = -0.5 * this.blade.diam - padding;
 		double x2 = -x1;
 		double y_offset = -0.5 * this.blade.diam
-			+ this.blade.len * slope_y * min(
+			+ this.blade.len * slope.y * double.min(
 				1f / (4 * this.blade.droop),
 				1 - this.blade.droop);
-		double y1 = 0.5 * this.blade.diam + padding;
-		double y2 = y_offset - padding;
-		double x_offset = slope_x * this.blade.len;
-		if (slope_x < 0) {
+		double y1 = y_offset - padding;
+		double y2 = 0.5 * this.blade.diam + padding;
+		double x_offset = slope.x * this.blade.len;
+		if (slope.x < 0) {
 			x1 += x_offset;
 		} else {
 			x2 += x_offset;
 		}
-		return Bounds() {
-			x1 = x1, y1 = y1, x2 = x2, y2 = y2
-		};
+		return Bounds(x1, y1, x2, y2);
 	}
 
-	public static Point root_pos() {
-		return Point() { x = 0, y = 0 };
+	public static Vector root_pos() {
+		return Vector(0, 0);
 	}
 }
 
@@ -68,8 +65,7 @@ public struct BladeParams {
 
 	public static Orbit orbit(BladeParams blade) {
 		return Orbit.line_with_droop(
-			Math.cos(blade.angle),
-			-Math.sin(blade.angle),
+			Vector.polar(1, -blade.angle),
 			blade.len,
 			blade.droop);
 	}
@@ -122,7 +118,7 @@ public void draw_grass(
 		Cairo.Context ctx,
 		GrassParams grass,
 		GrassDetails details) {
-	Point root_pos = GrassParams.root_pos();
+	Vector root_pos = GrassParams.root_pos();
 	ctx.save();
 	ctx.translate(root_pos.x, root_pos.y);
 	Draw.draw_blade(ctx, grass.blade);
@@ -147,10 +143,7 @@ public static void draw_blade(
 	DrawUtil.orbit_to(ctx, blade_offset_left_orbit, blade.seg_count);
 	ctx.close_path();
 
-	Point grad_end = Point() {
-		x = Math.cos(blade.angle) * blade.len,
-		y = -Math.sin(blade.angle) * blade.len
-	};
+	Vector grad_end = Vector.polar(blade.len, -blade.angle);
 
 	Cairo.Pattern grad_left = new Cairo.Pattern.linear(0, 0, grad_end.x, grad_end.y);
 	grad_left.add_color_stop_rgb(0, 0.706 + blade.shade, 0.784 + blade.shade, 0.549);

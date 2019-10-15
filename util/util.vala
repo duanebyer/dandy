@@ -1,53 +1,11 @@
 namespace Dandy.Util {
 
-public struct Point {
-	double x;
-	double y;
-
-	public string to_string() {
-		return "(" + x.to_string() + ", " + y.to_string() + ")";
-	}
-}
-
-public struct Point3 {
-	double x;
-	double y;
-	double z;
-
-	public string to_string() {
-		return "(" + x.to_string() + ", " + y.to_string() + ", " + z.to_string() + ")";
-	}
-}
-
-public struct Bounds {
-	double x1;
-	double y1;
-	double x2;
-	double y2;
-}
-
 public double random_sym(double x = 1) {
 	return Random.double_range(-x, x);
 }
 
-public double max(double x, double y) {
-	if (x > y) {
-		return x;
-	} else {
-		return y;
-	}
-}
-
-public double min(double x, double y) {
-	if (x < y) {
-		return x;
-	} else {
-		return y;
-	}
-}
-
-public double bound_angle(double alpha) {
-	double result = Math.fmod(alpha, 2 * Math.PI);
+public double bound_angle(double angle) {
+	double result = Math.fmod(angle, 2 * Math.PI);
 	if (result > Math.PI) {
 		result -= 2 * Math.PI;
 	} else if (result < -Math.PI) {
@@ -64,12 +22,66 @@ public double square(double x) {
 	return x * x;
 }
 
-public double length(double delta_x, double delta_y) {
-	return Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+// I call the "cosc(x)" function to be:
+// cosc(x) = (1 - cos(x)) / x^2
+public double cosc(double x) {
+	if (x.is_infinity() != 0) {
+		return 0;
+	} else if (x.is_nan()) {
+		return x;
+	} else {
+		double cos_x = Math.cos(x);
+		double result = (1 - cos_x) / x;
+		// For small x, we need to compute cosc using the series.
+		if (x.abs() < 1 && !result.is_normal()) {
+			result = 0;
+			double x_pow = 1;
+			double factorial = 2;
+			double term = 0;
+			uint next_factorial = 3;
+			do {
+				term = x_pow / factorial;
+				x_pow = -x_pow;
+				x_pow *= x;
+				x_pow *= x;
+				factorial *= next_factorial;
+				factorial *= next_factorial + 1;
+				next_factorial += 2;
+				result += term;
+			} while (term != 0);
+		}
+		return result;
+	}
 }
 
-public double length3(double delta_x, double delta_y, double delta_z) {
-	return Math.sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z);
+public double sinc(double x) {
+	if (x.is_infinity() != 0) {
+		return 0;
+	} else if (x.is_nan()) {
+		return x;
+	} else {
+		double sin_x = Math.sin(x);
+		double result = sin_x / x;
+		// For small x, we need to compute sinc using the series.
+		if (x.abs() < 1 && !result.is_normal()) {
+			result = 0;
+			double x_pow = 1;
+			double factorial = 1;
+			double term = 0;
+			uint next_factorial = 2;
+			do {
+				term = x_pow / factorial;
+				x_pow = -x_pow;
+				x_pow *= x;
+				x_pow *= x;
+				factorial *= next_factorial;
+				factorial *= next_factorial + 1;
+				next_factorial += 2;
+				result += term;
+			} while (term != 0);
+		}
+		return result;
+	}
 }
 
 }
