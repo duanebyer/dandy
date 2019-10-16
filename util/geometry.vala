@@ -59,6 +59,10 @@ public struct Vector {
 			this.x * sin_angle + this.y * cos_angle);
 	}
 
+	public Vector transform(Vector unit_x, Vector unit_y) {
+		return unit_x.scale(this.x).add(unit_y.scale(this.y));
+	}
+
 	public Vector scale(double scale) {
 		return Vector(
 			scale * this.x,
@@ -139,6 +143,12 @@ public struct Vector3 {
 		Vector3 term_vec = this.scale(Math.cos(angle));
 		Vector3 result = term_vec.add(term_par).add(term_perp);
 		return result;
+	}
+
+	public Vector3 transform(Vector3 unit_x, Vector3 unit_y, Vector3 unit_z) {
+		return unit_x.scale(this.x)
+			.add(unit_y.scale(this.y))
+			.add(unit_z.scale(this.z));
 	}
 
 	public Vector3 scale(double scale) {
