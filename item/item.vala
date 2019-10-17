@@ -80,31 +80,34 @@ public class Item : Object {
 				new_height);
 		}
 
-		// Copy the image over.
-		Cairo.Context ctx = new Cairo.Context(this._image_effects);
-		ctx.set_operator(Cairo.Operator.SOURCE);
-		// First clear the existing image.
-		ctx.set_source_rgba(0, 0, 0, 0);
-		ctx.paint();
-		// Then copy the new one over.
-		ctx.set_source_surface(
-			this._image,
-			this._effect_padding,
-			this._effect_padding);
-		ctx.rectangle(
-			this._effect_padding,
-			this._effect_padding,
-			this._image.get_width(),
-			this._image.get_height());
-		ctx.fill();
+		// Check that there is a canvas to draw to.
+		if (this._canvas != null) {
+			// Copy the image over.
+			Cairo.Context ctx = new Cairo.Context(this._image_effects);
+			ctx.set_operator(Cairo.Operator.SOURCE);
+			// First clear the existing image.
+			ctx.set_source_rgba(0, 0, 0, 0);
+			ctx.paint();
+			// Then copy the new one over.
+			ctx.set_source_surface(
+				this._image,
+				this._effect_padding,
+				this._effect_padding);
+			ctx.rectangle(
+				this._effect_padding,
+				this._effect_padding,
+				this._image.get_width(),
+				this._image.get_height());
+			ctx.fill();
 
-		// Now apply our effects!
-		// TODO: Actually apply the effects.
+			// Now apply our effects!
+			// TODO: Actually apply the effects.
 
-		// Resize the canvas, and also make sure to invalidate it.
-		// TODO: Avoid resizing the canvas if possible.
-		if (!this._canvas.set_size(new_width, new_height)) {
-			this._canvas.invalidate();
+			// Resize the canvas, and also make sure to invalidate it.
+			// TODO: Avoid resizing the canvas if possible.
+			if (!this._canvas.set_size(new_width, new_height)) {
+				this._canvas.invalidate();
+			}
 		}
 	}
 
@@ -116,7 +119,7 @@ public class Item : Object {
 		ctx.restore();
 	}
 
-	public Item(Util.Bounds bounds, DrawMethod draw) {
+	protected void draw(Util.Bounds bounds, DrawMethod draw) {
 		this._bounds = Util.Bounds(0, 0, 0, 0);
 		// Round up the size of the bounds to the nearest pixel.
 		this._bounds.p1.x = Math.floor(Math.fmin(bounds.p1.x, bounds.p2.x));

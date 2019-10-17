@@ -194,13 +194,95 @@ public struct Bounds {
 	public double width() {
 		return p2.x - p1.x;
 	}
-
 	public double height() {
 		return p2.y - p1.y;
 	}
 
 	public Vector center() {
 		return this.p2.sub(this.p1).scale(0.5).add(this.p1);
+	}
+
+	public Bounds add(Vector offset) {
+		return Bounds.from_points(p1.add(offset), p2.add(offset));
+	}
+
+	public Bounds sub(Vector offset) {
+		return Bounds.from_points(p1.sub(offset), p2.sub(offset));
+	}
+
+	public Bounds union(Bounds other) {
+		return Bounds(
+			Math.fmin(this.p1.x, other.p1.x),
+			Math.fmin(this.p1.y, other.p1.y),
+			Math.fmax(this.p2.x, other.p2.x),
+			Math.fmax(this.p2.y, other.p2.y));
+	}
+
+	public Bounds intersection(Bounds other) {
+		return Bounds(
+			Math.fmax(this.p1.x, other.p1.x),
+			Math.fmax(this.p1.y, other.p1.y),
+			Math.fmin(this.p2.x, other.p2.x),
+			Math.fmin(this.p2.y, other.p2.y));
+	}
+}
+
+public struct Bounds3 {
+	Vector3 p1;
+	Vector3 p2;
+
+	public Bounds3(
+			double x1, double y1, double z1,
+			double x2, double y2, double z2) {
+		this.p1 = Vector3(x1, y1, z1);
+		this.p2 = Vector3(x2, y2, z2);
+	}
+
+	public Bounds3.from_points(Vector3 p1, Vector3 p2) {
+		this.p1 = p1;
+		this.p2 = p2;
+	}
+
+	public double width() {
+		return p2.x - p1.x;
+	}
+	public double height() {
+		return p2.y - p1.y;
+	}
+	public double depth() {
+		return p2.z - p1.z;
+	}
+
+	public Vector3 center() {
+		return this.p2.sub(this.p1).scale(0.5).add(this.p1);
+	}
+
+	public Bounds3 add(Vector3 offset) {
+		return Bounds3.from_points(p1.add(offset), p2.add(offset));
+	}
+
+	public Bounds3 sub(Vector3 offset) {
+		return Bounds3.from_points(p1.sub(offset), p2.sub(offset));
+	}
+
+	public Bounds3 union(Bounds3 other) {
+		return Bounds3(
+			Math.fmin(this.p1.x, other.p1.x),
+			Math.fmin(this.p1.y, other.p1.y),
+			Math.fmin(this.p1.z, other.p1.z),
+			Math.fmax(this.p2.x, other.p2.x),
+			Math.fmax(this.p2.y, other.p2.y),
+			Math.fmax(this.p2.z, other.p2.z));
+	}
+
+	public Bounds3 intersection(Bounds3 other) {
+		return Bounds3(
+			Math.fmax(this.p1.x, other.p1.x),
+			Math.fmax(this.p1.y, other.p1.y),
+			Math.fmax(this.p1.z, other.p1.z),
+			Math.fmin(this.p2.x, other.p2.x),
+			Math.fmin(this.p2.y, other.p2.y),
+			Math.fmin(this.p2.z, other.p2.z));
 	}
 }
 
