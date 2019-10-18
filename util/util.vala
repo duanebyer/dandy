@@ -41,7 +41,7 @@ public double cosc(double x) {
 		return x;
 	} else {
 		double cos_x = Math.cos(x);
-		double result = (1 - cos_x) / x;
+		double result = (1 - cos_x) / (x * x);
 		// For small x, we need to compute cosc using the series.
 		if (x.abs() < 1 && !result.is_normal()) {
 			result = 0;
