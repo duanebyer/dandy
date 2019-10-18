@@ -102,39 +102,34 @@ public class Simulation : Clutter.Actor {
 	private Gee.ArrayList<Item.Item> generate_items() {
 		Gee.ArrayList<Item.Item> items = new Gee.ArrayList<Item.Item>();
 		// Generate the grass.
-		// The `x_rel` coordinate runs from -0.5 to 0.5, and refers to the
-		// relative position within the viewing angle of the camera (set by the
-		// FOV).
-		// The `z_rel` coordinate runs from 0 to 1, and refers to the z-
-		// coordinate as a fraction of the scene depth.
-		double grass_x_rel = -0.5;
+		double grass_x_rel = 0;
 		double grass_z_rel = 0;
+		// TODO: Make this into two separate loops, so that z-related variables
+		// don't have to be recalculated every pass.
 		while (grass_z_rel < 1) {
 			double grass_x_step = 1.0 / 10;
 			double grass_z_step = 1.0 / 10;
-			double z_range = this._scene_bounds.depth();
-			double grass_z = this._scene_bounds.p1.z + grass_z_rel * z_range;
-			Util.Vector3 reference_point = this._scene_bounds.center();
-			reference_point.z = grass_z;
-			double distance_z = reference_point
-				.sub(this._camera.pos)
-				.dot(this._camera.dir_z);
-			// TODO: This is a little bit arbitrary. The true x-range could be
-			// affected by the curvature of the hill.
-			double x_range = 2 * Math.tan(0.5 * this._camera.fov) * distance_z;
-			double grass_x = this._camera.pos.x + grass_x_rel * x_range;
+			double grass_z = Util.lerp(
+				this._scene_bounds.p1.z,
+				this._scene_bounds.p2.z,
+				grass_z_rel);
+			Util.Bounds bounds_at_z = this._camera.bounds_at_z(grass_z);
+			double grass_x = Util.lerp(
+				bounds_at_z.p1.x,
+				bounds_at_z.p2.x,
+				grass_x_rel);
 			double grass_y = this.hill_height(grass_x, grass_z);
 			Util.Vector3 pos = Util.Vector3(grass_x, grass_y, grass_z);
 			double z_scale =
 				(this._camera.transform_vector(pos, Util.Vector3.UNIT_Z).y
 				/ this._camera.transform_vector(pos, Util.Vector3.UNIT_X).x).abs();
 			Item.Item grass = new Item.Grass(
-				grass_x_step * x_range,
-				grass_z_step * z_range * z_scale);
+				grass_x_step * bounds_at_z.width(),
+				grass_z_step * this._scene_bounds.depth() * z_scale);
 			grass.pos = pos;
 			items.add(grass);
-			if (grass_x_rel > 0.5) {
-				grass_x_rel = -0.5;
+			if (grass_x_rel > 1) {
+				grass_x_rel = 0;
 				grass_z_rel += grass_z_step;
 			} else {
 				grass_x_rel += grass_x_step;
@@ -142,13 +137,15 @@ public class Simulation : Clutter.Actor {
 		}
 		for (uint idx = 0; idx < 20; ++idx) {
 			Item.Item stalk = new Item.Stalk();
-			double x = Random.double_range(
-				this._scene_bounds.p1.x,
-				this._scene_bounds.p2.x);
-			double z = Random.double_range(
+			double stalk_z = Random.double_range(
 				this._scene_bounds.p1.z,
 				this._scene_bounds.p2.z);
-			stalk.pos = Util.Vector3(x, this.hill_height(x, z), z);
+			Util.Bounds bounds_at_z = this._camera.bounds_at_z(stalk_z);
+			double stalk_x = Random.double_range(
+				bounds_at_z.p1.x,
+				bounds_at_z.p2.x);
+			double stalk_y = this.hill_height(stalk_x, stalk_z);
+			stalk.pos = Util.Vector3(stalk_x, stalk_y, stalk_z);
 			items.add(stalk);
 		}
 		return items;
