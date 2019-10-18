@@ -102,27 +102,42 @@ public class Simulation : Clutter.Actor {
 	private Gee.ArrayList<Item.Item> generate_items() {
 		Gee.ArrayList<Item.Item> items = new Gee.ArrayList<Item.Item>();
 		// Generate the grass.
-		double grass_x = this._scene_bounds.p1.x;
-		double grass_z = this._scene_bounds.p1.z;
-		while (grass_z < this._scene_bounds.p2.z) {
-			double grass_x_step = 256;
-			double grass_z_step = 128;
-			Util.Vector3 pos = Util.Vector3(
-				grass_x,
-				this.hill_height(grass_x, grass_z),
-				grass_z);
-			print("Generating grass at " + pos.to_string() + "\n");
+		// The `x_rel` coordinate runs from -0.5 to 0.5, and refers to the
+		// relative position within the viewing angle of the camera (set by the
+		// FOV).
+		// The `z_rel` coordinate runs from 0 to 1, and refers to the z-
+		// coordinate as a fraction of the scene depth.
+		double grass_x_rel = -0.5;
+		double grass_z_rel = 0;
+		while (grass_z_rel < 1) {
+			double grass_x_step = 1.0 / 10;
+			double grass_z_step = 1.0 / 10;
+			double z_range = this._scene_bounds.depth();
+			double grass_z = this._scene_bounds.p1.z + grass_z_rel * z_range;
+			Util.Vector3 reference_point = this._scene_bounds.center();
+			reference_point.z = grass_z;
+			double distance_z = reference_point
+				.sub(this._camera.pos)
+				.dot(this._camera.dir_z);
+			// TODO: This is a little bit arbitrary. The true x-range could be
+			// affected by the curvature of the hill.
+			double x_range = 2 * Math.tan(0.5 * this._camera.fov) * distance_z;
+			double grass_x = this._camera.pos.x + grass_x_rel * x_range;
+			double grass_y = this.hill_height(grass_x, grass_z);
+			Util.Vector3 pos = Util.Vector3(grass_x, grass_y, grass_z);
 			double z_scale =
 				(this._camera.transform_vector(pos, Util.Vector3.UNIT_Z).y
 				/ this._camera.transform_vector(pos, Util.Vector3.UNIT_X).x).abs();
-			Item.Item grass = new Item.Grass(grass_x_step, grass_z_step * z_scale);
+			Item.Item grass = new Item.Grass(
+				grass_x_step * x_range,
+				grass_z_step * z_range * z_scale);
 			grass.pos = pos;
 			items.add(grass);
-			if (grass_x > this._scene_bounds.p2.x) {
-				grass_x = this._scene_bounds.p1.x;
-				grass_z += grass_z_step;
+			if (grass_x_rel > 0.5) {
+				grass_x_rel = -0.5;
+				grass_z_rel += grass_z_step;
 			} else {
-				grass_x += grass_x_step;
+				grass_x_rel += grass_x_step;
 			}
 		}
 		for (uint idx = 0; idx < 20; ++idx) {
