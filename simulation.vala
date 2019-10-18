@@ -10,10 +10,11 @@ public class Simulation : Clutter.Actor {
 	private Util.Bounds3 _scene_bounds;
 	private double _hill_curvature;
 	private Util.Vector3 _hill_vertex;
+
 	private double hill_height(double x, double z) {
 		return this._hill_vertex.y + this._hill_curvature * (
-			Util.square(this._hill_vertex.x - x)
-			+ Util.square(this._hill_vertex.z - z));
+			Util.square((this._hill_vertex.x - x) / this._scene_bounds.width())
+			+ Util.square((this._hill_vertex.z - z) / this._scene_bounds.depth()));
 	}
 
 	private class ItemActor {
@@ -50,7 +51,7 @@ public class Simulation : Clutter.Actor {
 		double near = 0.15 * this._scene_bounds.depth();
 		double far = near + this._scene_bounds.depth();
 		pos.z = this._scene_bounds.p1.z - near;
-		pos.y -= 0.5 * this._scene_bounds.height();
+		pos.y += 0.5 * this._scene_bounds.height();
 		this._camera = new Camera(
 			pos,
 			10 * Math.PI / 180,
@@ -60,6 +61,7 @@ public class Simulation : Clutter.Actor {
 	}
 
 	private void create_hill() {
+		this._hill_curvature = 0;
 		this._hill_curvature = Random.next_double() > 0.25 ?
 			Random.double_range(30, 60) :
 			Random.double_range(-17, -13);
@@ -109,14 +111,12 @@ public class Simulation : Clutter.Actor {
 				grass_x,
 				this.hill_height(grass_x, grass_z),
 				grass_z);
+			print("Generating grass at " + pos.to_string() + "\n");
 			double z_scale =
 				(this._camera.transform_vector(pos, Util.Vector3.UNIT_Z).y
 				/ this._camera.transform_vector(pos, Util.Vector3.UNIT_X).x).abs();
 			Item.Item grass = new Item.Grass(grass_x_step, grass_z_step * z_scale);
-			grass.pos = Util.Vector3(
-				grass_x,
-				this.hill_height(grass_x, grass_z),
-				grass_z);
+			grass.pos = pos;
 			items.add(grass);
 			if (grass_x > this._scene_bounds.p2.x) {
 				grass_x = this._scene_bounds.p1.x;
@@ -148,9 +148,8 @@ public class Simulation : Clutter.Actor {
 
 		this._scene_exists = true;
 		this._scene_bounds = Util.Bounds3(
-			-0.5 * width, 0.5 * width,
-			-0.5 * height, 0.5 * height,
-			0, 1.5 * width);
+			-0.5 * width, -0.5 * height, 0,
+			0.5 * width, 0.5 * height, 1.5 * width);
 
 		this.create_camera(width, height);
 		this.create_hill();
