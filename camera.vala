@@ -142,20 +142,16 @@ public class Camera {
 	}
 
 	private Vector3 viewport_transform(Vector3 project_point) {
-		double width = this._viewport.width();
-		double height = this._viewport.height();
 		Vector viewport_center = this._viewport.center();
-		double scale = 0.5 * double.max(width, height);
+		double scale = 0.5 * this._viewport.width();
 		return Vector3(
 			scale * project_point.x + viewport_center.x,
 			-scale * project_point.y + viewport_center.y,
 			project_point.z);
 	}
 	private Vector3 viewport_transform_vector(Vector3 project_vec) {
-		double width = this._viewport.width();
-		double height = this._viewport.height();
 		Vector viewport_center = this._viewport.center();
-		double scale = 0.5 * double.max(width, height);
+		double scale = 0.5 * this._viewport.width();
 		return Vector3(
 			scale * project_vec.x,
 			-scale * project_vec.y,
