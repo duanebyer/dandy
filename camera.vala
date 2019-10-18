@@ -79,6 +79,31 @@ public class Camera {
 		this.fov = fov;
 	}
 
+	// Gives the bounds (in world space) at a certain z-coordinate (in world
+	// space). Everything outside of the bounds will not be visible on the
+	// camera, although some items inside the bounds may also not be visible.
+	public Bounds bounds_at_z(double z) {
+		// Find the corner rays of the camera.
+		double aspect_ratio = viewport.width() / viewport.height();
+		Vector3 viewport_x = this.dir_x;
+		Vector3 viewport_y = this.dir_y.scale(1 / aspect_ratio);
+		Vector3 viewport_z = this.dir_z.scale(this._fov_factor);
+		Vector3 corner_11 = viewport_z.sub(viewport_x).sub(viewport_y);
+		Vector3 corner_12 = viewport_z.sub(viewport_x).add(viewport_y);
+		Vector3 corner_21 = viewport_z.add(viewport_x).sub(viewport_y);
+		Vector3 corner_22 = viewport_z.add(viewport_x).add(viewport_y);
+		double z_rel = z - this.pos.z;
+		corner_11 = corner_11.scale(z_rel / corner_11.z);
+		corner_12 = corner_12.scale(z_rel / corner_12.z);
+		corner_21 = corner_21.scale(z_rel / corner_21.z);
+		corner_22 = corner_22.scale(z_rel / corner_22.z);
+		return Bounds(
+			Math.fmin(corner_11.x, corner_12.x),
+			Math.fmin(corner_11.y, corner_21.y),
+			Math.fmax(corner_21.x, corner_22.x),
+			Math.fmax(corner_12.y, corner_22.y));
+	}
+
 	// Transforms a point from world coordinates into screen coordinates.
 	public Vector3 transform(Vector3 point) {
 		Vector3 camera_point = this.camera_transform(point);
