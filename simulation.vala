@@ -2,7 +2,8 @@ namespace Dandy {
 
 public class Simulation : Clutter.Actor {
 	private Gee.ArrayList<ItemActor> _items;
-	private Clutter.Actor background;
+	private Clutter.Actor _background;
+	private Clutter.Actor _item_parent;
 	private Camera _camera;
 	private TimeoutSource _timer;
 	private bool _scene_exists;
@@ -60,6 +61,23 @@ public class Simulation : Clutter.Actor {
 			Util.Bounds(0, 0, viewport_width, viewport_height));
 	}
 
+	private void create_background(double width, double height) {
+		int pix_width = (int) Math.ceil(width);
+		int pix_height = (int) Math.ceil(height);
+		Clutter.Canvas canvas = new Clutter.Canvas() {
+			width = pix_width,
+			height = pix_height
+		};
+		Draw.SkyParams sky_params = Draw.SkyParams.generate(pix_width, pix_height);
+		Draw.SkyDetails sky_details = Draw.SkyDetails.generate(sky_params);
+		canvas.draw.connect((canvas, ctx, w, h) => {
+			Draw.draw_sky(ctx, sky_params, sky_details);
+			return false;
+		});
+		canvas.invalidate();
+		this._background.set_content(canvas);
+	}
+
 	private void create_hill() {
 		this._hill_curvature = 0;
 		this._hill_curvature = Random.next_double() > 0.25 ?
@@ -91,8 +109,8 @@ public class Simulation : Clutter.Actor {
 				// start with, to ensure that it is behind every other item.
 				screen_pos = Util.Vector3(0, 0, double.INFINITY)
 			};
-			this.add_child(actor);
-			this.set_child_above_sibling(actor, null);
+			this._item_parent.add_child(actor);
+			this._item_parent.set_child_above_sibling(actor, null);
 			// But at the top of the item list (sorted by depth).
 			this._items.add(item_actor);
 			this.update_item_actor(this._items.size - 1);
@@ -163,7 +181,21 @@ public class Simulation : Clutter.Actor {
 			-0.5 * width, -0.5 * height, 0,
 			0.5 * width, 0.5 * height, 1.5 * width);
 
+		if (this._background != null) {
+			this.remove_child(this._background);
+		}
+		if (this._item_parent != null) {
+			this.remove_child(this._item_parent);
+		}
+		this._background = new Clutter.Actor();
+		this._item_parent = new Clutter.Actor();
+		this._background.set_size((float) width, (float) height);
+		this._item_parent.set_size((float) width, (float) height);
+		this.add_child(this._background);
+		this.add_child(this._item_parent);
+
 		this.create_camera(width, height);
+		this.create_background(width, height);
 		this.create_hill();
 		this.create_item_actors();
 	}
@@ -217,11 +249,11 @@ public class Simulation : Clutter.Actor {
 					// Swap within the children of this actor (only need to do
 					// this once at the end).
 					if (z_change < 0) {
-						this.set_child_below_sibling(
+						this._item_parent.set_child_below_sibling(
 							item_actor.actor,
 							next_item_actor.actor);
 					} else {
-						this.set_child_above_sibling(
+						this._item_parent.set_child_above_sibling(
 							item_actor.actor,
 							next_item_actor.actor);
 					}
