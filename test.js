@@ -25,24 +25,24 @@ class Application {
 		this._window = new Gtk.ApplicationWindow({
 			application: this.application,
 			title: 'Hello world!',
-			default_width: 800,
-			default_height: 600
+			default_width: 1028,
+			default_height: 720
 		});
 
 		this.embed = new GtkClutter.Embed({
-			width_request: 800,
-			height_request: 600
+			width_request: 1028,
+			height_request: 720
 		});
 
 		/*
 		this.dandy_actor = new Dandy.Test({
-			width: 800,
-			height: 600
+			width: 1028,
+			height: 720
 		});
 		*/
 		this.dandy_actor = new Dandy.Simulation({
-			width: 800,
-			height: 600
+			width: 1028,
+			height: 720
 		});
 
 		let stage = this.embed.get_stage();
