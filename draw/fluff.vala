@@ -19,8 +19,8 @@ public struct FluffParams {
 				roll = Random.double_range(0, 2 * Math.PI)
 			},
 			seed = SeedParams() {
-				diam = 5,
-				len = 12
+				diam = 4,
+				len = 10
 			},
 			anchor = AnchorParams() {
 				offset = 48,

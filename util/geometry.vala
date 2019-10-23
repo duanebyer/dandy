@@ -210,6 +210,12 @@ public struct Bounds {
 		return Bounds.from_points(p1.sub(offset), p2.sub(offset));
 	}
 
+	public Bounds pad(double padding) {
+		return Bounds(
+			this.p1.x - padding, this.p1.y - padding,
+			this.p2.x + padding, this.p2.y + padding);
+	}
+
 	public Bounds union(Bounds other) {
 		return Bounds(
 			Math.fmin(this.p1.x, other.p1.x),
@@ -263,6 +269,12 @@ public struct Bounds3 {
 
 	public Bounds3 sub(Vector3 offset) {
 		return Bounds3.from_points(p1.sub(offset), p2.sub(offset));
+	}
+
+	public Bounds3 pad(double padding) {
+		return Bounds3(
+			this.p1.x - padding, this.p1.y - padding, this.p1.z - padding,
+			this.p2.x + padding, this.p2.y + padding, this.p2.z + padding);
 	}
 
 	public Bounds3 union(Bounds3 other) {

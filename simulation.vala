@@ -154,7 +154,7 @@ public class Simulation : Clutter.Actor {
 			}
 		}
 		for (uint idx = 0; idx < 20; ++idx) {
-			Item.Item stalk = new Item.Stalk();
+			Item.Item stalk = new Item.Dandelion();
 			double stalk_z = Random.double_range(
 				this._scene_bounds.p1.z,
 				this._scene_bounds.p2.z);
