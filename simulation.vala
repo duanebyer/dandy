@@ -137,14 +137,19 @@ public class Simulation : Clutter.Actor {
 				bounds_at_z.p2.x,
 				grass_x_rel);
 			double grass_y = this.hill_height(grass_x, grass_z);
-			Util.Vector3 pos = Util.Vector3(grass_x, grass_y, grass_z);
+			Util.Vector3 grass_pos = Util.Vector3(grass_x, grass_y, grass_z);
 			double z_scale =
-				(this._camera.transform_vector(pos, Util.Vector3.UNIT_Z).y
-				/ this._camera.transform_vector(pos, Util.Vector3.UNIT_X).x).abs();
+				(this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_Z).y
+				/ this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_X).x).abs();
+			double grass_width = grass_x_step * bounds_at_z.width();
+			double grass_height = grass_z_step * this._scene_bounds.depth() * z_scale;
+			double grass_scale =
+				this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_X).x;
 			Item.Item grass = new Item.Grass(
-				grass_x_step * bounds_at_z.width(),
-				grass_z_step * this._scene_bounds.depth() * z_scale);
-			grass.pos = pos;
+				grass_width,
+				grass_height,
+				grass_scale);
+			grass.pos = grass_pos;
 			items.add(grass);
 			if (grass_x_rel > 1) {
 				grass_x_rel = 0;
@@ -154,7 +159,6 @@ public class Simulation : Clutter.Actor {
 			}
 		}
 		for (uint idx = 0; idx < 20; ++idx) {
-			Item.Item stalk = new Item.Dandelion();
 			double stalk_z = Random.double_range(
 				this._scene_bounds.p1.z,
 				this._scene_bounds.p2.z);
@@ -163,7 +167,11 @@ public class Simulation : Clutter.Actor {
 				bounds_at_z.p1.x,
 				bounds_at_z.p2.x);
 			double stalk_y = this.hill_height(stalk_x, stalk_z);
-			stalk.pos = Util.Vector3(stalk_x, stalk_y, stalk_z);
+			Util.Vector3 stalk_pos = Util.Vector3(stalk_x, stalk_y, stalk_z);
+			double stalk_scale =
+				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
+			Item.Item stalk = new Item.Dandelion(stalk_scale);
+			stalk.pos = stalk_pos;
 			items.add(stalk);
 		}
 		return items;
@@ -232,7 +240,7 @@ public class Simulation : Clutter.Actor {
 		actor.set_rotation_angle(
 			Clutter.RotateAxis.Z_AXIS,
 			Math.PI / 180 * angle);
-		actor.set_scale(scale_x, scale_y);
+		actor.set_scale(scale_x / item.scale, scale_y / item.scale);
 
 		// Check if z has changed. If it has, then ensure that the item is
 		// sorted.

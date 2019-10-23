@@ -3,7 +3,7 @@ namespace Dandy.Item {
 using Dandy;
 
 public class Grass : Item {
-	public Grass(double length_x, double length_y) {
+	public Grass(double length_x, double length_y, double scale = 1) {
 		// Create a small clump of grass in a hexagon of a certain radius.
 		double spacing = 16;
 		uint grass_x_count = (uint) Math.ceil(length_x / spacing);
@@ -25,7 +25,7 @@ public class Grass : Item {
 			}
 		}
 		pos_list.sort((a, b) => Util.compare(a.y, b.y));
-		base.draw(bounds, (ctx) => {
+		base.draw(bounds, scale, (ctx) => {
 			for (int idx = 0; idx < params_list.size; ++idx) {
 				Draw.GrassParams params = params_list[idx];
 				Util.Vector pos = pos_list[idx];

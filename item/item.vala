@@ -19,6 +19,7 @@ public class Item : Object {
 	private double _effect_padding;
 	private Cairo.ImageSurface _image;
 	private Cairo.ImageSurface _image_effects;
+	private double _scale;
 	private Clutter.Canvas _canvas;
 
 	public delegate void DrawMethod(Cairo.Context ctx);
@@ -45,6 +46,10 @@ public class Item : Object {
 
 	public Util.Bounds bounds {
 		get { return this._bounds; }
+	}
+
+	public double scale {
+		get { return this._scale; }
 	}
 
 	public Effects effects {
@@ -119,8 +124,12 @@ public class Item : Object {
 		ctx.restore();
 	}
 
-	protected void draw(Util.Bounds bounds, DrawMethod draw) {
+	protected void draw(Util.Bounds bounds, double scale, DrawMethod draw) {
+		this._scale = scale;
 		this._bounds = Util.Bounds(0, 0, 0, 0);
+		// Scale by the scale factor.
+		bounds.p1 = bounds.p1.scale(scale);
+		bounds.p2 = bounds.p2.scale(scale);
 		// Round up the size of the bounds to the nearest pixel.
 		this._bounds.p1.x = Math.floor(Math.fmin(bounds.p1.x, bounds.p2.x));
 		this._bounds.p1.y = Math.floor(Math.fmin(bounds.p1.y, bounds.p2.y));
@@ -140,8 +149,11 @@ public class Item : Object {
 			(int) width,
 			(int) height);
 		Cairo.Context image_ctx = new Cairo.Context(this._image);
+		image_ctx.save();
 		image_ctx.translate(-this._bounds.p1.x, -this._bounds.p1.y);
+		image_ctx.scale(this._scale, this._scale);
 		draw(image_ctx);
+		image_ctx.restore();
 
 		this._canvas = new Clutter.Canvas() {
 			width = (int) width,
