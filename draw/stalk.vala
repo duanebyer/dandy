@@ -3,8 +3,8 @@ namespace Dandy.Draw {
 using Util;
 
 public struct StalkParams {
-	public StemParams stem;
-	public HeadParams head;
+	StemParams stem;
+	HeadParams head;
 
 	public static StalkParams generate() {
 		double droop = Random.double_range(0, 0.2);
