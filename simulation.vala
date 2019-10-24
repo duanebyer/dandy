@@ -70,8 +70,24 @@ public class Simulation : Clutter.Actor {
 		};
 		Draw.SkyParams sky_params = Draw.SkyParams.generate(pix_width, pix_height);
 		Draw.SkyDetails sky_details = Draw.SkyDetails.generate(sky_params);
+		Cairo.ImageSurface image = new Cairo.ImageSurface(
+			Cairo.Format.ARGB32,
+			pix_width,
+			pix_height);
+		Cairo.Context image_ctx = new Cairo.Context(image);
+		image_ctx.save();
+		Draw.draw_sky(image_ctx, sky_params, sky_details);
+		image_ctx.restore();
+		image.flush();
+
+		DrawUtil.blur_image_box(image, 2);
+
 		canvas.draw.connect((canvas, ctx, w, h) => {
-			Draw.draw_sky(ctx, sky_params, sky_details);
+			ctx.save();
+			ctx.set_source_surface(image, 0, 0);
+			ctx.set_operator(Cairo.Operator.SOURCE);
+			ctx.paint();
+			ctx.restore();
 			return false;
 		});
 		canvas.invalidate();

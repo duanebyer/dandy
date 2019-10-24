@@ -81,6 +81,12 @@ public struct Vector {
 			this.y - other.y);
 	}
 
+	public Vector complex_mul(Vector other) {
+		return Vector(
+			this.x * other.x - this.y * other.y,
+			this.x * other.y + this.y * other.x);
+	}
+
 	public string to_string() {
 		return "(" + x.to_string() + ", " + y.to_string() + ")";
 	}

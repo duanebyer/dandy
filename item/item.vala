@@ -71,7 +71,7 @@ public class Item : Object {
 
 	private void update_effects() {
 		// Update the padding to be appropriate.
-		this._effect_padding = this._effects.blur_radius;
+		this._effect_padding = 2 * this._effects.blur_radius;
 		int new_width = (int) Math.ceil(
 			this._image.get_width() + 2 * this._effect_padding);
 		int new_height = (int) Math.ceil(
@@ -89,6 +89,7 @@ public class Item : Object {
 		if (this._canvas != null) {
 			// Copy the image over.
 			Cairo.Context ctx = new Cairo.Context(this._image_effects);
+			ctx.save();
 			ctx.set_operator(Cairo.Operator.SOURCE);
 			// First clear the existing image.
 			ctx.set_source_rgba(0, 0, 0, 0);
@@ -104,9 +105,16 @@ public class Item : Object {
 				this._image.get_width(),
 				this._image.get_height());
 			ctx.fill();
+			ctx.restore();
 
 			// Now apply our effects!
-			// TODO: Actually apply the effects.
+			if (this._effects.blur_radius != 0) {
+				DrawUtil.blur_image_box(
+					this._image_effects,
+					this._effects.blur_radius * this._scale);
+			}
+			// TODO: Apply color shift effects.
+			this._image_effects.flush();
 
 			// Resize the canvas, and also make sure to invalidate it.
 			// TODO: Avoid resizing the canvas if possible.
@@ -135,8 +143,8 @@ public class Item : Object {
 		this._bounds.p1.y = Math.floor(Math.fmin(bounds.p1.y, bounds.p2.y));
 		this._bounds.p2.x = Math.ceil(Math.fmax(bounds.p1.x, bounds.p2.x));
 		this._bounds.p2.y = Math.ceil(Math.fmax(bounds.p1.y, bounds.p2.y));
-		double width = this._bounds.width();
-		double height = this._bounds.height();
+		uint width = (uint) this._bounds.width();
+		uint height = (uint) this._bounds.height();
 
 		this._billboard_mode = BillboardMode.FACING_CAMERA;
 
@@ -154,6 +162,7 @@ public class Item : Object {
 		image_ctx.scale(this._scale, this._scale);
 		draw(image_ctx);
 		image_ctx.restore();
+		this._image.flush();
 
 		this._canvas = new Clutter.Canvas() {
 			width = (int) width,
