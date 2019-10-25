@@ -12,6 +12,27 @@ public void orbit_to(
 	}
 }
 
+public void tint_image(Cairo.ImageSurface image, double tint) {
+	// TODO: Check that image has the right format.
+	image.flush();
+	unowned uchar[] raw_data = image.get_data();
+	int width = image.get_width();
+	int height = image.get_height();
+	int color_stride = 4;
+	for (int x = 0; x < width * height * color_stride; ++x) {
+		if (x % color_stride != 0) {
+			double value = raw_data[x];
+			if (tint < 0) {
+				value *= 1 + tint;
+			} else {
+				value += (1 - value) * tint;
+			}
+			raw_data[x] = (uchar) value.clamp(0, 0xFF);
+		}
+	}
+	image.mark_dirty();
+}
+
 public void blur_image_box(Cairo.ImageSurface image, double blur_rad) {
 	// TODO: Check that image has the right format.
 	image.flush();

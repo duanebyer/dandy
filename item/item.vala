@@ -71,7 +71,7 @@ public class Item : Object {
 
 	private void update_effects() {
 		// Update the padding to be appropriate.
-		this._effect_padding = 2 * this._effects.blur_radius;
+		this._effect_padding = 2 * this._effects.blur_radius * this._scale;
 		int new_width = (int) Math.ceil(
 			this._image.get_width() + 2 * this._effect_padding);
 		int new_height = (int) Math.ceil(
@@ -113,7 +113,11 @@ public class Item : Object {
 					this._image_effects,
 					this._effects.blur_radius * this._scale);
 			}
-			// TODO: Apply color shift effects.
+			if (this._effects.tint != 0) {
+				DrawUtil.tint_image(
+					this._image_effects,
+					this._effects.tint);
+			}
 			this._image_effects.flush();
 
 			// Resize the canvas, and also make sure to invalidate it.

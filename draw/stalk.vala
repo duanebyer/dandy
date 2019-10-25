@@ -13,7 +13,7 @@ public struct StalkParams {
 			angle_sign * droop * 0.5 * Math.PI
 			* Random.double_range(0.9, 1.1)
 			+ 0.5 * Math.PI;
-		double len = Random.double_range(200, 300);
+		double len = Random.double_range(150, 350);
 		double diam_end = 11 * Random.double_range(0.9, 1.1);
 		double diam_start = diam_end + 0.015 * len * Random.double_range(0.9, 1.1);
 		return StalkParams() {

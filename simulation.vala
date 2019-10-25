@@ -9,6 +9,7 @@ public class Simulation : Clutter.Actor {
 	private bool _scene_exists;
 
 	private Util.Bounds3 _scene_bounds;
+	private double _scene_focus_z;
 	private double _hill_curvature;
 	private Util.Vector3 _hill_vertex;
 
@@ -19,11 +20,16 @@ public class Simulation : Clutter.Actor {
 	}
 
 	private Item.Item.Effects defocus_effect(double z) {
-		double defocus =
-			0.5 * (z - this._scene_bounds.center().z)
-			/ this._scene_bounds.depth();
-		double blur_radius = 14 * Math.fabs(defocus);
-		double tint = 0;
+		double defocus = 0;
+		double back_depth = this._scene_bounds.p2.z - this._scene_focus_z;
+		double front_depth = this._scene_focus_z - this._scene_bounds.p1.z;
+		if (z < this._scene_focus_z) {
+			defocus = (this._scene_focus_z - z) / front_depth;
+		} else if (z > this._scene_focus_z) {
+			defocus = (z - this._scene_focus_z) / back_depth;
+		}
+		double blur_radius = 8 * Math.fabs(defocus);
+		double tint = -0.4 * Math.fabs(defocus);
 		return Item.Item.Effects() {
 			blur_radius = blur_radius,
 			tint = tint
@@ -64,10 +70,10 @@ public class Simulation : Clutter.Actor {
 		double near = 0.15 * this._scene_bounds.depth();
 		double far = near + this._scene_bounds.depth();
 		pos.z = this._scene_bounds.p1.z - near;
-		pos.y += 0.5 * this._scene_bounds.height();
+		pos.y += 0.7 * this._scene_bounds.height();
 		this._camera = new Camera(
 			pos,
-			10 * Math.PI / 180,
+			7 * Math.PI / 180,
 			60 * Math.PI / 180,
 			near, far,
 			Util.Bounds(0, 0, viewport_width, viewport_height));
@@ -166,13 +172,13 @@ public class Simulation : Clutter.Actor {
 				grass_x_rel);
 			double grass_y = this.hill_height(grass_x, grass_z);
 			Util.Vector3 grass_pos = Util.Vector3(grass_x, grass_y, grass_z);
-			double z_scale =
-				(this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_Z).y
-				/ this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_X).x).abs();
-			double grass_width = grass_x_step * bounds_at_z.width();
-			double grass_height = grass_z_step * this._scene_bounds.depth() * z_scale;
 			double grass_scale =
 				this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_X).x;
+			double z_scale = Math.fabs(
+				this._camera.transform_vector(grass_pos, Util.Vector3.UNIT_Z).y
+				/ grass_scale);
+			double grass_width = grass_x_step * bounds_at_z.width();
+			double grass_height = grass_z_step * this._scene_bounds.depth() * z_scale;
 			Item.Item grass = new Item.Grass(
 				grass_width,
 				grass_height,
@@ -187,9 +193,10 @@ public class Simulation : Clutter.Actor {
 			}
 		}
 		// Background dandelions.
-		for (uint idx = 0; idx < 20; ++idx) {
+		for (uint idx = 0; idx < 60; ++idx) {
+			double back_depth = this._scene_bounds.p2.z - this._scene_focus_z;
 			double stalk_z = Random.double_range(
-				this._scene_bounds.center().z + 0.25 * this._scene_bounds.depth(),
+				this._scene_focus_z + 0.35 * back_depth,
 				this._scene_bounds.p2.z);
 			Util.Bounds bounds_at_z = this._camera.bounds_at_z(stalk_z);
 			double stalk_x = Random.double_range(
@@ -199,39 +206,46 @@ public class Simulation : Clutter.Actor {
 			Util.Vector3 stalk_pos = Util.Vector3(stalk_x, stalk_y, stalk_z);
 			double stalk_scale =
 				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
-			Item.Item stalk = new Item.Dandelion(stalk_scale);
+			double len = (idx % 2 == 0 ? 200 : 450) * (1 + Util.random_sym(0.3));
+			Item.Item stalk = new Item.Dandelion(len, stalk_scale);
 			stalk.pos = stalk_pos;
 			items.add(stalk);
 		}
 		// In focus dandelions.
-		for (uint idx = 0; idx < 5; ++idx) {
-			double stalk_z = this._scene_bounds.center().z;
+		uint dandelion_focus_count = 6;
+		for (uint idx = 0; idx < dandelion_focus_count; ++idx) {
+			double stalk_z = this._scene_focus_z;
 			Util.Bounds bounds_at_z = this._camera.bounds_at_z(stalk_z);
-			double stalk_x = Random.double_range(
-				bounds_at_z.p1.x,
-				bounds_at_z.p2.x);
+			double delta_x = bounds_at_z.width() / dandelion_focus_count;
+			double stalk_x = bounds_at_z.p1.x + idx * delta_x
+				+ Random.double_range(0, delta_x);
 			double stalk_y = this.hill_height(stalk_x, stalk_z);
 			Util.Vector3 stalk_pos = Util.Vector3(stalk_x, stalk_y, stalk_z);
 			double stalk_scale =
 				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
-			Item.Item stalk = new Item.Dandelion(stalk_scale);
+			double len = 350 * (1 + Util.random_sym(0.4));
+			Item.Item stalk = new Item.Dandelion(len, stalk_scale);
 			stalk.pos = stalk_pos;
 			items.add(stalk);
 		}
 		// Foreground dandelions.
-		for (uint idx = 0; idx < 5; ++idx) {
+		for (uint idx = 0; idx < 6; ++idx) {
+			double front_depth = this._scene_focus_z - this._scene_bounds.p1.z;
 			double stalk_z = Random.double_range(
 				this._scene_bounds.p1.z,
-				this._scene_bounds.center().z - 0.25 * this._scene_bounds.depth());
+				this._scene_focus_z - 0.25 * front_depth);
 			Util.Bounds bounds_at_z = this._camera.bounds_at_z(stalk_z);
-			double stalk_x = Random.double_range(
-				bounds_at_z.p1.x,
-				bounds_at_z.p2.x);
+			double stalk_x = bounds_at_z.p1.x + Random.double_range(
+				0, 0.15 * bounds_at_z.width());
+			if (Random.boolean()) {
+				stalk_x = bounds_at_z.center().x - stalk_x;
+			}
 			double stalk_y = this.hill_height(stalk_x, stalk_z);
 			Util.Vector3 stalk_pos = Util.Vector3(stalk_x, stalk_y, stalk_z);
 			double stalk_scale =
 				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
-			Item.Item stalk = new Item.Dandelion(stalk_scale);
+			double len = 400 * (1 + Util.random_sym(0.4));
+			Item.Item stalk = new Item.Dandelion(len, stalk_scale);
 			stalk.pos = stalk_pos;
 			items.add(stalk);
 		}
@@ -248,7 +262,9 @@ public class Simulation : Clutter.Actor {
 		this._scene_exists = true;
 		this._scene_bounds = Util.Bounds3(
 			-0.5 * width, -0.5 * height, 0,
-			0.5 * width, 0.5 * height, 1.5 * width);
+			0.5 * width, 0.5 * height, 2.5 * width);
+		this._scene_focus_z = this._scene_bounds.p1.z
+			+ 0.3 * this._scene_bounds.depth();
 
 		if (this._background != null) {
 			this.remove_child(this._background);
@@ -311,6 +327,7 @@ public class Simulation : Clutter.Actor {
 		if (z_change != 0) {
 			// Update any effects on the item.
 			item.effects = this.defocus_effect(item.pos.z);
+			actor.set_size(item.canvas.width, item.canvas.height);
 			// Check to reorder the actor if necessary.
 			int next_idx = idx + z_change;
 			while (next_idx >= 0 && next_idx < this._items.size) {
