@@ -13,6 +13,8 @@
 * Look into `clutter_actor_set_offscreen_redirect` and
   `clutter_actor_has_overlaps` as ways of possibly improving performance.
 ## Code quality
+* Come up with a nicer way to generate the items in the stage. Perhaps the
+  generation code can be moved out to another class.
 * Add more comments, particularly describing how the images of different items
   are made.
 * Fix bugs where a closure tries to own something in its environment. Does this
