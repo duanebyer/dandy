@@ -222,6 +222,24 @@ public struct Bounds {
 			this.p2.x + padding, this.p2.y + padding);
 	}
 
+	public Bounds positive() {
+		Bounds result;
+		result.p1.x = Math.fmin(this.p1.x, this.p2.x);
+		result.p1.y = Math.fmin(this.p1.y, this.p2.y);
+		result.p2.x = Math.fmax(this.p1.x, this.p2.x);
+		result.p2.y = Math.fmax(this.p1.y, this.p2.y);
+		return result;
+	}
+
+	public Bounds pixelize() {
+		Bounds result = this.positive();
+		result.p1.x = Math.floor(result.p1.x);
+		result.p1.y = Math.floor(result.p1.y);
+		result.p2.x = Math.ceil(result.p2.x);
+		result.p2.y = Math.ceil(result.p2.y);
+		return result;
+	}
+
 	public Bounds union(Bounds other) {
 		return Bounds(
 			Math.fmin(this.p1.x, other.p1.x),
@@ -281,6 +299,17 @@ public struct Bounds3 {
 		return Bounds3(
 			this.p1.x - padding, this.p1.y - padding, this.p1.z - padding,
 			this.p2.x + padding, this.p2.y + padding, this.p2.z + padding);
+	}
+
+	public Bounds positive() {
+		Bounds result;
+		result.p1.x = Math.fmin(this.p1.x, this.p2.x);
+		result.p1.y = Math.fmin(this.p1.y, this.p2.y);
+		result.p1.z = Math.fmin(this.p1.z, this.p2.z);
+		result.p2.x = Math.fmax(this.p1.x, this.p2.x);
+		result.p2.y = Math.fmax(this.p1.y, this.p2.y);
+		result.p2.z = Math.fmax(this.p1.z, this.p2.z);
+		return result;
 	}
 
 	public Bounds3 union(Bounds3 other) {
