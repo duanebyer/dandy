@@ -1,5 +1,11 @@
 namespace Dandy.Util {
 
+public void swap<T>(ref T a, ref T b) {
+	T temp = a;
+	a = b;
+	b = temp;
+}
+
 public int compare(double a, double b) {
 	if (a > b) {
 		return 1;
@@ -24,8 +30,17 @@ public double bound_angle(double angle) {
 	return result;
 }
 
-public double lerp(double x1, double x2, double t) {
-	return x1 * (1 - t) + x2 * t;
+public double lerp(double f1, double f2, double t) {
+	return f1 * (1 - t) + f2 * t;
+}
+
+public double lerp_2(
+		double f11, double f12, double f21, double f22,
+		double t1, double t2) {
+	return (1 - t1) * (1 - t2) * f11
+		+ t1 * (1 - t2) * f12
+		+ (1 - t1) * t2 * f21
+		+ t1 * t2 * f22;
 }
 
 public double square(double x) {
