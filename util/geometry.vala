@@ -223,7 +223,7 @@ public struct Bounds {
 	}
 
 	public Bounds positive() {
-		Bounds result;
+		Bounds result = Util.Bounds(0, 0, 0, 0);
 		result.p1.x = Math.fmin(this.p1.x, this.p2.x);
 		result.p1.y = Math.fmin(this.p1.y, this.p2.y);
 		result.p2.x = Math.fmax(this.p1.x, this.p2.x);
@@ -301,8 +301,8 @@ public struct Bounds3 {
 			this.p2.x + padding, this.p2.y + padding, this.p2.z + padding);
 	}
 
-	public Bounds positive() {
-		Bounds result;
+	public Bounds3 positive() {
+		Bounds3 result = Util.Bounds3(0, 0, 0, 0, 0, 0);
 		result.p1.x = Math.fmin(this.p1.x, this.p2.x);
 		result.p1.y = Math.fmin(this.p1.y, this.p2.y);
 		result.p1.z = Math.fmin(this.p1.z, this.p2.z);

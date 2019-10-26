@@ -1,5 +1,9 @@
 namespace Dandy.DrawUtil {
 
+public const Cairo.Format FORMAT_CAIRO = Cairo.Format.ARGB32;
+public const Cogl.PixelFormat FORMAT_COGL = Cogl.PixelFormat.BGRA_8888_PRE;
+public const uint FORMAT_SIZE = 4;
+
 public void orbit_to(
 		Cairo.Context ctx,
 		Util.Orbit orbit,
@@ -12,44 +16,60 @@ public void orbit_to(
 	}
 }
 
-public void tint_image(Cairo.ImageSurface image, double tint) {
-	// TODO: Check that image has the right format.
-	image.flush();
-	unowned uchar[] raw_data = image.get_data();
-	int width = image.get_width();
-	int height = image.get_height();
-	int color_stride = 4;
-	for (int x = 0; x < width * height * color_stride; ++x) {
-		if (x % color_stride != 0) {
-			double value = raw_data[x];
-			if (tint < 0) {
-				value *= 1 + tint;
-			} else {
-				value += (1 - value) * tint;
-			}
-			raw_data[x] = (uchar) value.clamp(0, 0xFF);
+public void texture_tint(Cogl.Texture tex, double tint) {
+	uint width = tex.get_width();
+	uint height = tex.get_height();
+	uint color_stride = 4;
+	uint row_stride = color_stride * width;
+	uint8[] tex_data = new uint8[row_stride * height];
+	tex.get_data(FORMAT_COGL, row_stride, tex_data);
+
+	// Because we are working with pre-multiplied RGBA values, every single
+	// component must be increased/decreased in the same way, including alpha.
+	for (uint x = 0; x < tex_data.length; ++x) {
+		double value = tex_data[x];
+		if (tint < 0) {
+			value *= 1 + tint;
+		} else {
+			value += (1 - value) * tint;
 		}
+		tex_data[x] = (uchar) value.clamp(0, 0xFF);
 	}
-	image.mark_dirty();
+
+	tex.set_region(
+		0, 0,
+		0, 0,
+		width, height,
+		(int) width, (int) height,
+		FORMAT_COGL, row_stride,
+		tex_data);
 }
 
-public void blur_image_box(Cairo.ImageSurface image, double blur_rad) {
-	// TODO: Check that image has the right format.
-	image.flush();
-	unowned uchar[] raw_data = image.get_data();
-	int width = image.get_width();
-	int height = image.get_height();
+public void texture_blur_stack(Cogl.Texture tex, double blur_rad) {
+	int width = (int) tex.get_width();
+	int height = (int) tex.get_height();
+	int color_stride = 4;
+	int row_stride = color_stride * width;
+	uint8[] tex_data = new uint8[row_stride * height];
+	tex.get_data(FORMAT_COGL, row_stride, tex_data);
+
 	int num_passes = 3;
 	int blur_pix_rad = (int) Math.sqrt(
 		(12 * Util.square(blur_rad) / num_passes + 1));
 	for (int i = 0; i < num_passes; ++i) {
-		blur_image_rows_box(raw_data, width, height, true, 4, blur_pix_rad);
-		blur_image_rows_box(raw_data, width, height, false, 4, blur_pix_rad);
+		blur_rows_stack(tex_data, width, height, true, color_stride, blur_pix_rad);
+		blur_rows_stack(tex_data, width, height, false, color_stride, blur_pix_rad);
 	}
-	image.mark_dirty();
+	tex.set_region(
+		0, 0,
+		0, 0,
+		width, height,
+		width, height,
+		FORMAT_COGL, row_stride,
+		tex_data);
 }
 
-private void blur_image_rows_box(
+private void blur_rows_stack(
 		uchar[] data,
 		int width,
 		int height,
@@ -94,18 +114,27 @@ private void blur_image_rows_box(
 	}
 }
 
-public void blur_image_gaussian(Cairo.ImageSurface image, double blur_rad) {
-	// TODO: Check that image has the right format.
-	image.flush();
-	unowned uchar[] raw_data = image.get_data();
-	uint width = image.get_width();
-	uint height = image.get_height();
-	blur_image_rows_gaussian(raw_data, width, height, true, 4, blur_rad);
-	blur_image_rows_gaussian(raw_data, width, height, false, 4, blur_rad);
-	image.mark_dirty();
+public void texture_blur_gaussian(Cogl.Texture tex, double blur_rad) {
+	int width = (int) tex.get_width();
+	int height = (int) tex.get_height();
+	int color_stride = 4;
+	int row_stride = color_stride * width;
+	uint8[] tex_data = new uint8[row_stride * height];
+	tex.get_data(FORMAT_COGL, row_stride, tex_data);
+
+	blur_rows_gaussian(tex_data, width, height, true, 4, blur_rad);
+	blur_rows_gaussian(tex_data, width, height, false, 4, blur_rad);
+
+	tex.set_region(
+		0, 0,
+		0, 0,
+		width, height,
+		width, height,
+		FORMAT_COGL, row_stride,
+		tex_data);
 }
 
-private void blur_image_rows_gaussian(
+private void blur_rows_gaussian(
 		uchar[] raw_data,
 		uint width,
 		uint height,

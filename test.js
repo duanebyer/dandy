@@ -40,7 +40,7 @@ class Application {
 			height: 720
 		});
 		*/
-		this.dandy_actor = new Dandy.Simulation({
+		this.dandy_actor = new Dandy.Main({
 			width: 1028,
 			height: 720
 		});

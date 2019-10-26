@@ -1,6 +1,4 @@
-namespace Dandy {
-
-using Util;
+namespace Dandy.Util {
 
 // This is a utility class that provides methods for projecting 3d points onto
 // the 2d drawing surface.
@@ -8,8 +6,9 @@ public class Camera {
 	Vector3 _pos;
 	double _tilt;
 	double _fov;
-	double _z_near;
-	double _z_far;
+	double _near;
+	double _far;
+	double _focal_plane;
 	Bounds _viewport;
 
 	// This stores the z-coordinate of the back plane.
@@ -39,13 +38,20 @@ public class Camera {
 			this._fov_factor = 1 / Math.tan(0.5 * this._fov);
 		}
 	}
-	public double z_near {
-		get { return this._z_near; }
-		set { this._z_near = value; }
+	public double near {
+		get { return this._near; }
+		set { this._near = value; }
 	}
-	public double z_far {
-		get { return this._z_far; }
-		set { this._z_far = value; }
+	public double far {
+		get { return this._far; }
+		set { this._far = value; }
+	}
+	// The focal plane doesn't actually do anything in the camera itself, but it
+	// is used by other parts of the rendering system to determine how much of
+	// a defocus effect to apply.
+	public double focal_plane {
+		get { return this._focal_plane; }
+		set { this._focal_plane = value; }
 	}
 	public Bounds viewport {
 		get { return this._viewport; }
@@ -67,11 +73,12 @@ public class Camera {
 			Vector3 pos,
 			double tilt,
 			double fov,
-			double z_near, double z_far,
+			double near, double far,
 			Bounds viewport) {
 		this._pos = pos;
-		this._z_near = z_near;
-		this._z_far = z_far;
+		this._near = near;
+		this._far = far;
+		this._focal_plane = 0.5 * (near + far);
 		this._viewport = viewport;
 		// Set the properties of tilt and fov to ensure that the cached
 		// variables also get updated correctly.
@@ -142,10 +149,10 @@ public class Camera {
 	}
 
 	private double project_transform_z(double z) {
-		return (z - this._z_near) / (this._z_far - this._z_near);
+		return (z - this._near) / (this._far - this._near);
 	}
 	private double project_transform_z_prime(double z) {
-		return 1 / (this._z_far - this._z_near);
+		return 1 / (this._far - this._near);
 	}
 	private Vector3 project_transform(Vector3 camera_point) {
 		double scale_factor = this._fov_factor / camera_point.z;

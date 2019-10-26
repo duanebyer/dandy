@@ -5,6 +5,7 @@
 * Add interactive dandelions.
 * Add a fluid simulation.
 ## Performance
+* There should be error checking on graphics methods used in DrawUtil and Item.
 * Increase performance of drawing to items. One possibility is to use a
   different type of Cairo surface.
 * Increase the performance of applying a blur effect. Can it be done on the GPU?
@@ -13,6 +14,11 @@
 * Look into `clutter_actor_set_offscreen_redirect` and
   `clutter_actor_has_overlaps` as ways of possibly improving performance.
 ## Code quality
+* Add run-time check on Bounds creation to make sure that it is a non-negative
+  sized region.
+* Order elements of classes/namespaces in more consistent ways.
+* Consistency when calling internal methods (this.method() or method()).
+* Determine when a class should extend Object and when it shouldn't.
 * Come up with a nicer way to generate the items in the stage. Perhaps the
   generation code can be moved out to another class.
 * Add more comments, particularly describing how the images of different items
@@ -36,3 +42,4 @@
   add a runtime check.
 ## Testing
 * Check the sinc and cosc functions near x=0.
+* Make sure that resizing the background properly recreates the scene.

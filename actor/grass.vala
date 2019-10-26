@@ -1,9 +1,13 @@
-namespace Dandy.Item {
+namespace Dandy.Actor {
 
 using Dandy;
 
 public class Grass : Item {
-	public Grass(double length_x, double length_y, double scale = 1) {
+	public Grass(
+			Util.Camera camera,
+			double length_x, double length_y,
+			double resolution_factor = 1) {
+		base(camera);
 		// Create a small clump of grass in a hexagon of a certain radius.
 		double spacing = 16;
 		uint grass_x_count = (uint) Math.ceil(length_x / spacing);
@@ -25,7 +29,7 @@ public class Grass : Item {
 			}
 		}
 		pos_list.sort((a, b) => Util.compare(a.y, b.y));
-		base.draw(bounds, scale, (ctx) => {
+		base.update_base_image(bounds, resolution_factor, (ctx) => {
 			for (int idx = 0; idx < params_list.size; ++idx) {
 				Draw.GrassParams params = params_list[idx];
 				Util.Vector pos = pos_list[idx];

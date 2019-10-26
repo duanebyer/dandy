@@ -1,14 +1,18 @@
-namespace Dandy {
+namespace Dandy.Actor {
 
-public class Simulation : Clutter.Actor {
-	private Gee.ArrayList<ItemActor> _items;
+using Dandy;
+
+public class Background : Clutter.Actor {
+	private Gee.ArrayList<Item> _items;
 	private Clutter.Actor _background;
 	private Clutter.Actor _item_parent;
-	private Camera _camera;
+	private Util.Camera _camera;
 	private TimeoutSource _timer;
 	private bool _scene_exists;
 
 	private Util.Bounds3 _scene_bounds;
+	// TODO: Rename this to better reflect that this is the z at which the main
+	// part of the scene is located.
 	private double _scene_focus_z;
 	private double _hill_curvature;
 	private Util.Vector3 _hill_vertex;
@@ -19,30 +23,7 @@ public class Simulation : Clutter.Actor {
 			+ Util.square((this._hill_vertex.z - z) / this._scene_bounds.depth()));
 	}
 
-	private Item.Item.Effects defocus_effect(double z) {
-		double defocus = 0;
-		double back_depth = this._scene_bounds.p2.z - this._scene_focus_z;
-		double front_depth = this._scene_focus_z - this._scene_bounds.p1.z;
-		if (z < this._scene_focus_z) {
-			defocus = (this._scene_focus_z - z) / front_depth;
-		} else if (z > this._scene_focus_z) {
-			defocus = (z - this._scene_focus_z) / back_depth;
-		}
-		double blur_radius = 8 * Math.fabs(defocus);
-		double tint = -0.4 * Math.fabs(defocus);
-		return Item.Item.Effects() {
-			blur_radius = blur_radius,
-			tint = tint
-		};
-	}
-
-	private class ItemActor {
-		public Item.Item item;
-		public Clutter.Actor actor;
-		public Util.Vector3 screen_pos;
-	}
-
-	public Simulation() {
+	public Background() {
 		Object();
 	}
 
@@ -71,45 +52,51 @@ public class Simulation : Clutter.Actor {
 		double far = near + this._scene_bounds.depth();
 		pos.z = this._scene_bounds.p1.z - near;
 		pos.y += 0.7 * this._scene_bounds.height();
-		this._camera = new Camera(
+		this._camera = new Util.Camera(
 			pos,
 			7 * Math.PI / 180,
 			60 * Math.PI / 180,
 			near, far,
 			Util.Bounds(0, 0, viewport_width, viewport_height));
+		this._camera.focal_plane = this._scene_focus_z;
 	}
 
 	private void create_background(double width, double height) {
 		int pix_width = (int) Math.ceil(width);
 		int pix_height = (int) Math.ceil(height);
-		Clutter.Canvas canvas = new Clutter.Canvas() {
-			width = pix_width,
-			height = pix_height
-		};
 		Draw.SkyParams sky_params = Draw.SkyParams.generate(pix_width, pix_height);
 		Draw.SkyDetails sky_details = Draw.SkyDetails.generate(sky_params);
 		Cairo.ImageSurface image = new Cairo.ImageSurface(
-			Cairo.Format.ARGB32,
+			DrawUtil.FORMAT_CAIRO,
 			pix_width,
 			pix_height);
-		Cairo.Context image_ctx = new Cairo.Context(image);
-		image_ctx.save();
-		Draw.draw_sky(image_ctx, sky_params, sky_details);
-		image_ctx.restore();
+		Cairo.Context ctx = new Cairo.Context(image);
+		ctx.save();
+		Draw.draw_sky(ctx, sky_params, sky_details);
+		ctx.restore();
 		image.flush();
 
-		DrawUtil.blur_image_box(image, 2);
+		Cogl.Texture tex = new Cogl.Texture.from_data(
+			(uint) pix_width, (uint) pix_height,
+			// TODO: Think about what texture flags should be used here.
+			Cogl.TextureFlags.NONE,
+			DrawUtil.FORMAT_COGL,
+			DrawUtil.FORMAT_COGL,
+			image.get_stride(),
+			image.get_data());
+		DrawUtil.texture_blur_stack(tex, 2);
+		uint tex_stride = DrawUtil.FORMAT_SIZE * pix_width;
+		uint8[] tex_data = new uint8[tex_stride * pix_height];
+		tex.get_data(DrawUtil.FORMAT_COGL, tex_stride, tex_data);
 
-		canvas.draw.connect((canvas, ctx, w, h) => {
-			ctx.save();
-			ctx.set_source_surface(image, 0, 0);
-			ctx.set_operator(Cairo.Operator.SOURCE);
-			ctx.paint();
-			ctx.restore();
-			return false;
-		});
-		canvas.invalidate();
-		this._background.set_content(canvas);
+		Clutter.Image content = new Clutter.Image();
+		content.set_data(
+			tex_data,
+			DrawUtil.FORMAT_COGL,
+			pix_width, pix_height,
+			tex_stride);
+
+		this._background.set_content(content);
 	}
 
 	private void create_hill() {
@@ -124,35 +111,15 @@ public class Simulation : Clutter.Actor {
 	}
 
 	private void create_item_actors() {
-		this._items = new Gee.ArrayList<ItemActor>();
-		foreach (Item.Item item in this.generate_items()) {
-			// Create the actor.
-			Clutter.Actor actor = new Clutter.Actor();
-			actor.set_content(item.canvas);
-			actor.set_size(
-				(float) item.bounds.width(),
-				(float) item.bounds.height());
-			actor.set_pivot_point(
-				(float) (-item.bounds.p1.x / item.bounds.width()),
-				(float) (-item.bounds.p1.y / item.bounds.height()));
-
-			ItemActor item_actor = new ItemActor() {
-				item = item,
-				actor = actor,
-				// The screen position must be set to the negative maximum to
-				// start with, to ensure that it is behind every other item.
-				screen_pos = Util.Vector3(0, 0, double.INFINITY)
-			};
-			this._item_parent.add_child(actor);
-			this._item_parent.set_child_above_sibling(actor, null);
-			// But at the top of the item list (sorted by depth).
-			this._items.add(item_actor);
-			this.update_item_actor(this._items.size - 1);
+		this._items = this.generate_items();
+		foreach (Item item in this._items) {
+			this._item_parent.add_child(item);
+			item.update();
 		}
 	}
 
-	private Gee.ArrayList<Item.Item> generate_items() {
-		Gee.ArrayList<Item.Item> items = new Gee.ArrayList<Item.Item>();
+	private Gee.ArrayList<Item> generate_items() {
+		Gee.ArrayList<Item> items = new Gee.ArrayList<Item>();
 		// Generate the grass.
 		double grass_x_rel = 0;
 		double grass_z_rel = 0;
@@ -179,11 +146,12 @@ public class Simulation : Clutter.Actor {
 				/ grass_scale);
 			double grass_width = grass_x_step * bounds_at_z.width();
 			double grass_height = grass_z_step * this._scene_bounds.depth() * z_scale;
-			Item.Item grass = new Item.Grass(
+			Item grass = new Grass(
+				this._camera,
 				grass_width,
 				grass_height,
 				grass_scale);
-			grass.pos = grass_pos;
+			grass.world_pos = grass_pos;
 			items.add(grass);
 			if (grass_x_rel > 1) {
 				grass_x_rel = 0;
@@ -207,8 +175,8 @@ public class Simulation : Clutter.Actor {
 			double stalk_scale =
 				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
 			double len = (idx % 2 == 0 ? 200 : 450) * (1 + Util.random_sym(0.3));
-			Item.Item stalk = new Item.Dandelion(len, stalk_scale);
-			stalk.pos = stalk_pos;
+			Item stalk = new Dandelion(this._camera, len, stalk_scale);
+			stalk.world_pos = stalk_pos;
 			items.add(stalk);
 		}
 		// In focus dandelions.
@@ -224,8 +192,8 @@ public class Simulation : Clutter.Actor {
 			double stalk_scale =
 				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
 			double len = 350 * (1 + Util.random_sym(0.4));
-			Item.Item stalk = new Item.Dandelion(len, stalk_scale);
-			stalk.pos = stalk_pos;
+			Item stalk = new Dandelion(this._camera, len, stalk_scale);
+			stalk.world_pos = stalk_pos;
 			items.add(stalk);
 		}
 		// Foreground dandelions.
@@ -245,8 +213,8 @@ public class Simulation : Clutter.Actor {
 			double stalk_scale =
 				this._camera.transform_vector(stalk_pos, Util.Vector3.UNIT_X).x;
 			double len = 400 * (1 + Util.random_sym(0.4));
-			Item.Item stalk = new Item.Dandelion(len, stalk_scale);
-			stalk.pos = stalk_pos;
+			Item stalk = new Dandelion(this._camera, len, stalk_scale);
+			stalk.world_pos = stalk_pos;
 			items.add(stalk);
 		}
 		return items;
@@ -283,79 +251,6 @@ public class Simulation : Clutter.Actor {
 		this.create_background(width, height);
 		this.create_hill();
 		this.create_item_actors();
-	}
-
-	private void update_item_actor(int idx) {
-		if (!this._scene_exists) {
-			return;
-		}
-		ItemActor item_actor = this._items[idx];
-		Item.Item item = item_actor.item;
-		Clutter.Actor actor = item_actor.actor;
-
-		// Find the parameters describing how the item should appear.
-		Util.Vector3 screen_pos = this._camera.transform(item.pos);
-		double angle = item.angle;
-		double scale_x = this._camera.transform_vector(
-			item.pos,
-			Util.Vector3.UNIT_X).x;
-		double scale_y = scale_x;
-		if (item.billboard_mode == Item.Item.BillboardMode.FACING_CAMERA) {
-			scale_y = scale_x;
-		} else if (item.billboard_mode == Item.Item.BillboardMode.UPRIGHT) {
-			scale_y = this._camera.transform_vector(
-				item.pos,
-				Util.Vector3.UNIT_Y).y;
-		}
-
-		// Update the position and scale of the actor.
-		item_actor.screen_pos.x = screen_pos.x;
-		item_actor.screen_pos.y = screen_pos.y;
-		actor.set_position(
-			(float) (screen_pos.x + item.bounds.p1.x),
-			(float) (screen_pos.y + item.bounds.p1.y));
-		actor.set_rotation_angle(
-			Clutter.RotateAxis.Z_AXIS,
-			Math.PI / 180 * angle);
-		actor.set_scale(scale_x / item.scale, scale_y / item.scale);
-
-		// Check if z has changed. If it has, then ensure that the item is
-		// sorted.
-		double new_z = screen_pos.z;
-		int z_change = Util.compare(new_z, item_actor.screen_pos.z);
-		item_actor.screen_pos.z = new_z;
-		if (z_change != 0) {
-			// Update any effects on the item.
-			item.effects = this.defocus_effect(item.pos.z);
-			actor.set_size(item.canvas.width, item.canvas.height);
-			// Check to reorder the actor if necessary.
-			int next_idx = idx + z_change;
-			while (next_idx >= 0 && next_idx < this._items.size) {
-				ItemActor next_item_actor = this._items[next_idx];
-				int z_diff = Util.compare(next_item_actor.screen_pos.z, new_z);
-				if (z_diff == z_change) {
-					// Swap within the children of this actor (only need to do
-					// this once at the end).
-					if (z_change < 0) {
-						this._item_parent.set_child_below_sibling(
-							item_actor.actor,
-							next_item_actor.actor);
-					} else {
-						this._item_parent.set_child_above_sibling(
-							item_actor.actor,
-							next_item_actor.actor);
-					}
-					break;
-				} else {
-					// Swap entries.
-					this._items[next_idx] = this._items[idx];
-					this._items[idx] = next_item_actor;
-					// Move to the next pair to compare.
-					idx += z_change;
-					next_idx = idx + z_change;
-				}
-			}
-		}
 	}
 
 	// On a resize, we have to basically recreate the entire scene.
