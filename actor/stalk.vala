@@ -2,7 +2,7 @@ namespace Dandy.Actor {
 
 using Dandy;
 
-public class Stalk : Item {
+internal class Stalk : Item {
 	public Stalk(Util.Camera camera, double resolution_factor = 1) {
 		base(camera);
 		Draw.StalkParams params = Draw.StalkParams.generate();

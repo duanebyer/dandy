@@ -1,10 +1,12 @@
 namespace Dandy.DrawUtil {
 
-public const Cairo.Format FORMAT_CAIRO = Cairo.Format.ARGB32;
-public const Cogl.PixelFormat FORMAT_COGL = Cogl.PixelFormat.BGRA_8888_PRE;
-public const uint FORMAT_SIZE = 4;
+internal const Cairo.Format FORMAT_CAIRO = Cairo.Format.ARGB32;
+internal const Cogl.PixelFormat FORMAT_COGL = Cogl.PixelFormat.BGRA_8888_PRE;
+internal const uint FORMAT_SIZE = 4;
 
-public void orbit_to(
+internal const double BLUR_PADDING_FACTOR = 2.5;
+
+internal void orbit_to(
 		Cairo.Context ctx,
 		Util.Orbit orbit,
 		uint seg_count) {
@@ -16,7 +18,7 @@ public void orbit_to(
 	}
 }
 
-public void texture_tint(Cogl.Texture tex, double tint) {
+internal void texture_tint(Cogl.Texture tex, double tint) {
 	uint width = tex.get_width();
 	uint height = tex.get_height();
 	uint color_stride = 4;
@@ -45,7 +47,7 @@ public void texture_tint(Cogl.Texture tex, double tint) {
 		tex_data);
 }
 
-public void texture_blur_stack(Cogl.Texture tex, double blur_rad) {
+internal void texture_blur_stack(Cogl.Texture tex, double blur_rad) {
 	int width = (int) tex.get_width();
 	int height = (int) tex.get_height();
 	int color_stride = 4;
@@ -114,7 +116,7 @@ private void blur_rows_stack(
 	}
 }
 
-public void texture_blur_gaussian(Cogl.Texture tex, double blur_rad) {
+internal void texture_blur_gaussian(Cogl.Texture tex, double blur_rad) {
 	int width = (int) tex.get_width();
 	int height = (int) tex.get_height();
 	int color_stride = 4;

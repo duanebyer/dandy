@@ -1,7 +1,7 @@
 namespace Dandy.Util {
 
 // TODO: Rename this class. Trajectory?
-public class Orbit : Object {
+internal class Orbit : Object {
 
 	public delegate Vector Parameterization(double t);
 	public delegate double OffsetParameterization(double t);

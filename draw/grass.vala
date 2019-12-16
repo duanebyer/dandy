@@ -2,7 +2,7 @@ namespace Dandy.Draw {
 
 using Util;
 
-public struct GrassParams {
+internal struct GrassParams {
 	BladeParams blade;
 	LaminasParams laminas;
 
@@ -54,7 +54,7 @@ public struct GrassParams {
 	}
 }
 
-public struct BladeParams {
+internal struct BladeParams {
 	double shade;
 	double spacing;
 	double diam;
@@ -71,14 +71,14 @@ public struct BladeParams {
 	}
 }
 
-public struct LaminasParams {
+internal struct LaminasParams {
 	uint count;
 	double len;
 	double len_var;
 	uint seg_count;
 }
 
-public struct GrassDetails {
+internal struct GrassDetails {
 	LaminaDetails[] laminas;
 
 	public static GrassDetails generate(GrassParams grass) {
@@ -88,7 +88,7 @@ public struct GrassDetails {
 	}
 }
 
-public struct LaminaDetails {
+internal struct LaminaDetails {
 	double u;
 	double t_start;
 	double t_end;
@@ -114,7 +114,7 @@ public struct LaminaDetails {
 }
 
 // Draws the grass at the origin.
-public void draw_grass(
+internal void draw_grass(
 		Cairo.Context ctx,
 		GrassParams grass,
 		GrassDetails details) {
@@ -127,7 +127,7 @@ public void draw_grass(
 }
 
 // Draws the blade, assuming root transformations.
-public static void draw_blade(
+internal static void draw_blade(
 		Cairo.Context ctx,
 		BladeParams blade) {
 	Orbit blade_orbit = BladeParams.orbit(blade);
@@ -169,7 +169,7 @@ public static void draw_blade(
 }
 
 // Draws the laminas, assuming root transformations.
-public void draw_laminas(
+internal void draw_laminas(
 		Cairo.Context ctx,
 		BladeParams blade,
 		LaminasParams laminas,

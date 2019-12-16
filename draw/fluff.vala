@@ -4,7 +4,7 @@ using Util;
 
 // A fluff has three main parts: a seed, an anchor, and a collection of
 // strands connected to the anchor.
-public struct FluffParams {
+internal struct FluffParams {
 	OrientParams orient;
 	SeedParams seed;
 	AnchorParams anchor;
@@ -73,22 +73,22 @@ public struct FluffParams {
 	}
 }
 
-public struct OrientParams {
+internal struct OrientParams {
 	double tilt; // The tilt in the third dimension (fore-shortened).
 	double roll; // The roll.
 }
 
-public struct SeedParams {
+internal struct SeedParams {
 	double diam; // The shape of the ellipsoidal seed.
 	double len;
 }
 
-public struct AnchorParams {
+internal struct AnchorParams {
 	double offset; // Distance from anchor to seed.
 	double diam; // The diameter of the spherical anchor.
 }
 
-public struct StrandsParams {
+internal struct StrandsParams {
 	double ellipse_width; // The shape of the volume that the strands occupy.
 	double ellipse_height;
 	double len_var; // Percentage variation in lengths of strands.
@@ -98,7 +98,7 @@ public struct StrandsParams {
 	uint count; // How many strands are there?
 }
 
-public struct FluffDetails {
+internal struct FluffDetails {
 	StrandDetails[] strands;
 
 	// Generates the specific details of an object from a set of parameters,
@@ -111,7 +111,7 @@ public struct FluffDetails {
 	}
 }
 
-public struct StrandDetails {
+internal struct StrandDetails {
 	Vector3 pos; // Coordinates of the end of the strand.
 	double curvature; // Amount of deviation of center from straight line.
 
@@ -140,7 +140,7 @@ public struct StrandDetails {
 }
 
 // Draw the fluff at the origin.
-public void draw_fluff(
+internal void draw_fluff(
 		Cairo.Context ctx,
 		FluffParams fluff,
 		FluffDetails fluff_details) {

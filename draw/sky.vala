@@ -2,7 +2,7 @@ namespace Dandy.Draw {
 
 using Util;
 
-public struct SkyParams {
+internal struct SkyParams {
 	double width;
 	double height;
 	CloudsParams clouds;
@@ -29,14 +29,14 @@ public struct SkyParams {
 	}
 }
 
-public struct CloudsParams {
+internal struct CloudsParams {
 	uint count;
 	double height;
 	double diam;
 	double diam_var;
 }
 
-public struct SkyDetails {
+internal struct SkyDetails {
 	CloudDetails[] clouds;
 
 	public static SkyDetails generate(SkyParams sky) {
@@ -46,7 +46,7 @@ public struct SkyDetails {
 	}
 }
 
-public struct CloudDetails {
+internal struct CloudDetails {
 	Vector pos;
 	double diam;
 
@@ -69,7 +69,7 @@ public struct CloudDetails {
 	}
 }
 
-public void draw_sky(
+internal void draw_sky(
 		Cairo.Context ctx,
 		SkyParams sky,
 		SkyDetails details) {
@@ -83,7 +83,7 @@ public void draw_sky(
 	ctx.restore();
 }
 
-public void draw_clouds(
+internal void draw_clouds(
 		Cairo.Context ctx,
 		CloudsParams clouds,
 		CloudDetails[] cloud_details) {

@@ -2,7 +2,7 @@ namespace Dandy.Actor {
 
 using Dandy;
 
-public class Grass : Item {
+internal class Grass : Item {
 	public Grass(
 			Util.Camera camera,
 			double length_x, double length_y,

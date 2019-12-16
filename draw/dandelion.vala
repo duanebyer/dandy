@@ -2,7 +2,7 @@ namespace Dandy.Draw {
 
 using Util;
 
-public struct DandelionParams {
+internal struct DandelionParams {
 	StalkParams stalk;
 	AnchoredFluffsParams anchored_fluffs;
 
@@ -31,13 +31,13 @@ public struct DandelionParams {
 	}
 }
 
-public struct AnchoredFluffsParams {
+internal struct AnchoredFluffsParams {
 	double spacing;
 	double rot_var;
 	double tilt_var;
 }
 
-public struct DandelionDetails {
+internal struct DandelionDetails {
 	StalkDetails stalk;
 	AnchoredFluffDetails[] anchored_fluffs;
 
@@ -51,7 +51,7 @@ public struct DandelionDetails {
 	}
 }
 
-public struct AnchoredFluffDetails {
+internal struct AnchoredFluffDetails {
 	FluffParams fluff_params;
 	FluffDetails fluff_details;
 	double rot;
@@ -87,7 +87,7 @@ public struct AnchoredFluffDetails {
 	}
 }
 
-public void draw_dandelion(
+internal void draw_dandelion(
 		Cairo.Context ctx,
 		DandelionParams dandelion,
 		DandelionDetails dandelion_details) {
@@ -110,7 +110,7 @@ public void draw_dandelion(
 	ctx.restore();
 }
 
-public void draw_anchored_fluffs(
+internal void draw_anchored_fluffs(
 		Cairo.Context ctx,
 		StalkParams stalk,
 		AnchoredFluffsParams anchored_fluffs,

@@ -1,6 +1,6 @@
 namespace Dandy.Util {
 
-public struct Vector {
+internal struct Vector {
 	double x;
 	double y;
 
@@ -92,7 +92,7 @@ public struct Vector {
 	}
 }
 
-public struct Vector3 {
+internal struct Vector3 {
 	double x;
 	double y;
 	double z;
@@ -183,7 +183,7 @@ public struct Vector3 {
 	}
 }
 
-public struct Bounds {
+internal struct Bounds {
 	Vector p1;
 	Vector p2;
 
@@ -195,6 +195,10 @@ public struct Bounds {
 	public Bounds.from_points(Vector p1, Vector p2) {
 		this.p1 = p1;
 		this.p2 = p2;
+	}
+
+	public Bounds3 as_bounds3() {
+		return Bounds3.from_points(this.p1.as_vector3(), this.p2.as_vector3());
 	}
 
 	public double width() {
@@ -257,7 +261,7 @@ public struct Bounds {
 	}
 }
 
-public struct Bounds3 {
+internal struct Bounds3 {
 	Vector3 p1;
 	Vector3 p2;
 
@@ -271,6 +275,10 @@ public struct Bounds3 {
 	public Bounds3.from_points(Vector3 p1, Vector3 p2) {
 		this.p1 = p1;
 		this.p2 = p2;
+	}
+
+	public Bounds as_bounds() {
+		return Bounds.from_points(this.p1.as_vector(), this.p2.as_vector());
 	}
 
 	public double width() {

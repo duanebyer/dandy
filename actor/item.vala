@@ -5,7 +5,7 @@ using Dandy;
 // The base class for objects in the scene that are part of the simulation.
 // Items can interact with wind, gravity, and have effects due to being out of
 // focus, and so on.
-public class Item : Clutter.Actor {
+internal class Item : Clutter.Actor {
 	private Util.Vector3 _world_pos;
 	private double _world_rot;
 	private double _screen_z;
@@ -152,7 +152,7 @@ public class Item : Clutter.Actor {
 
 		double blur_radius = 7 * Math.fabs(defocus) * this._resolution_factor;
 		double tint = -0.4 * Math.fabs(defocus);
-		double padding = 2 * blur_radius;
+		double padding = DrawUtil.BLUR_PADDING_FACTOR * blur_radius;
 		this._bounds = this._base_bounds.pad(padding).pixelize();
 
 		int base_width = this._base_image.get_width();

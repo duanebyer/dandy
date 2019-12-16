@@ -2,7 +2,7 @@ namespace Dandy.Actor {
 
 using Dandy;
 
-public class Dandelion : Item {
+internal class Dandelion : Item {
 	public Dandelion(
 			Util.Camera camera,
 			double len,

@@ -2,7 +2,7 @@ namespace Dandy.Draw {
 
 using Util;
 
-public struct StalkParams {
+internal struct StalkParams {
 	StemParams stem;
 	HeadParams head;
 
@@ -88,7 +88,7 @@ public struct StalkParams {
 	}
 }
 
-public struct StemParams {
+internal struct StemParams {
 	double droop;
 	double angle;
 	double len;
@@ -104,20 +104,20 @@ public struct StemParams {
 	}
 }
 
-public struct HeadParams {
+internal struct HeadParams {
 	double width;
 	double height;
 	StipplesParams stipples;
 	BractsParams bracts;
 }
 
-public struct StipplesParams {
+internal struct StipplesParams {
 	double spacing;
 	double diam;
 	double curvature;
 }
 
-public struct BractsParams {
+internal struct BractsParams {
 	double base_width;
 	double max_offset;
 	double len;
@@ -125,7 +125,7 @@ public struct BractsParams {
 	uint seg_count;
 }
 
-public struct StalkDetails {
+internal struct StalkDetails {
 	BractDetails[] bracts;
 
 	public static StalkDetails generate(StalkParams stalk) {
@@ -136,7 +136,7 @@ public struct StalkDetails {
 	}
 }
 
-public struct BractDetails {
+internal struct BractDetails {
 	double shade;
 	Vector p0;
 	Vector p1;
@@ -172,7 +172,7 @@ public struct BractDetails {
 }
 
 // Draws the stalk at the origin.
-public void draw_stalk(
+internal void draw_stalk(
 		Cairo.Context ctx,
 		StalkParams stalk,
 		StalkDetails stalk_details) {
@@ -193,7 +193,7 @@ public void draw_stalk(
 }
 
 // Draws the stem, assuming root transformations.
-public void draw_stem(
+internal void draw_stem(
 		Cairo.Context ctx,
 		StemParams stem) {
 	Vector slope = Vector.polar(1, -stem.angle);
@@ -260,7 +260,7 @@ public void draw_stem(
 }
 
 // Draws the head of the stalk, assuming head transformations.
-public void draw_head(
+internal void draw_head(
 		Cairo.Context ctx,
 		HeadParams head,
 		BractDetails[] bract_details) {
@@ -286,7 +286,7 @@ public void draw_head(
 }
 
 // Draws the bracts around the head, assuming head transformations.
-public void draw_bracts(
+internal void draw_bracts(
 		Cairo.Context ctx,
 		HeadParams head,
 		BractDetails[] bract_details) {
@@ -319,7 +319,7 @@ public void draw_bracts(
 }
 
 // Draws the stipples on the head, assuming head transformations.
-public void draw_head_stipples(
+internal void draw_head_stipples(
 		Cairo.Context ctx,
 		HeadParams head) {
 	uint ring_count =

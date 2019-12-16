@@ -1,12 +1,12 @@
 namespace Dandy.Util {
 
-public void swap<T>(ref T a, ref T b) {
+internal void swap<T>(ref T a, ref T b) {
 	T temp = a;
 	a = b;
 	b = temp;
 }
 
-public int compare(double a, double b) {
+internal int compare(double a, double b) {
 	if (a > b) {
 		return 1;
 	} else if (a < b) {
@@ -16,11 +16,11 @@ public int compare(double a, double b) {
 	}
 }
 
-public double random_sym(double x = 1) {
+internal double random_sym(double x = 1) {
 	return Random.double_range(-x, x);
 }
 
-public double bound_angle(double angle) {
+internal double bound_angle(double angle) {
 	double result = Math.fmod(angle, 2 * Math.PI);
 	if (result > Math.PI) {
 		result -= 2 * Math.PI;
@@ -30,26 +30,17 @@ public double bound_angle(double angle) {
 	return result;
 }
 
-public double lerp(double f1, double f2, double t) {
+internal double lerp(double f1, double f2, double t) {
 	return f1 * (1 - t) + f2 * t;
 }
 
-public double lerp_2(
-		double f11, double f12, double f21, double f22,
-		double t1, double t2) {
-	return (1 - t1) * (1 - t2) * f11
-		+ t1 * (1 - t2) * f12
-		+ (1 - t1) * t2 * f21
-		+ t1 * t2 * f22;
-}
-
-public double square(double x) {
+internal double square(double x) {
 	return x * x;
 }
 
-// I call the "cosc(x)" function to be:
+// I define the "cosc(x)" function to be analogous to the sinc(x) function:
 // cosc(x) = (1 - cos(x)) / x^2
-public double cosc(double x) {
+internal double cosc(double x) {
 	if (x.is_infinity() != 0) {
 		return 0;
 	} else if (x.is_nan()) {
@@ -79,7 +70,7 @@ public double cosc(double x) {
 	}
 }
 
-public double sinc(double x) {
+internal double sinc(double x) {
 	if (x.is_infinity() != 0) {
 		return 0;
 	} else if (x.is_nan()) {

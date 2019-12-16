@@ -4,7 +4,7 @@ using Util;
 
 // Leafs have a stem, a number of leaflets along the stem, and veins drawn
 // on the leaflets.
-public struct LeafParams {
+internal struct LeafParams {
 	StemParams stem;
 	LeafletsParams leaflets;
 	VeinsParams veins;
@@ -83,7 +83,7 @@ public struct LeafParams {
 	}
 }
 
-public struct LeafletsParams {
+internal struct LeafletsParams {
 	double shade;
 	uint count;
 	double len_var;
@@ -99,7 +99,7 @@ public struct LeafletsParams {
 	}
 }
 
-public struct VeinsParams {
+internal struct VeinsParams {
 	uint count;
 	double len;
 	double len_var;
@@ -109,7 +109,7 @@ public struct VeinsParams {
 	double tip_curvature_var;
 }
 
-public struct LeafDetails {
+internal struct LeafDetails {
 	LeafletDetails[] leaflets_left;
 	LeafletDetails[] leaflets_right;
 	VeinDetails[] veins;
@@ -124,7 +124,7 @@ public struct LeafDetails {
 	}
 }
 
-public struct LeafletDetails {
+internal struct LeafletDetails {
 	double t_prev; // The ts indicate points along the stem.
 	double t_mid;
 	double t_next;
@@ -175,7 +175,7 @@ public struct LeafletDetails {
 	}
 }
 
-public struct VeinDetails {
+internal struct VeinDetails {
 	int dir;
 	double len;
 	double t_start;
@@ -216,7 +216,7 @@ public struct VeinDetails {
 }
 
 // Draws the leaf at the origin.
-public void draw_leaf(
+internal void draw_leaf(
 		Cairo.Context ctx,
 		LeafParams leaf,
 		LeafDetails details) {
@@ -234,7 +234,7 @@ public void draw_leaf(
 }
 
 // Draws the leaflets, assuming root transformations.
-public void draw_leaflets(
+internal void draw_leaflets(
 		Cairo.Context ctx,
 		StemParams stem,
 		LeafletsParams leaflets,
@@ -399,7 +399,7 @@ public void draw_leaflets(
 }
 
 // Draws the veins, assuming root transformations.
-public void draw_veins(
+internal void draw_veins(
 		Cairo.Context ctx,
 		StemParams stem,
 		VeinDetails[] vein_details) {

@@ -2,7 +2,7 @@ namespace Dandy.Util {
 
 // This is a utility class that provides methods for projecting 3d points onto
 // the 2d drawing surface.
-public class Camera {
+internal class Camera : Object {
 	Vector3 _pos;
 	double _tilt;
 	double _fov;

@@ -1,13 +1,13 @@
 namespace Dandy.Util {
 
-public Vector[] fft(Vector[] data) {
+internal Vector[] fft(Vector[] data) {
 	uint n = data.length;
 	Vector[] transform = new Vector[n];
 	fft_internal(data, transform, 1, 0, -1);
 	return transform;
 }
 
-public Vector[] ifft(Vector[] transform) {
+internal Vector[] ifft(Vector[] transform) {
 	uint n = transform.length;
 	Vector[] data = new Vector[n];
 	fft_internal(transform, data, 1, 0, 1);
