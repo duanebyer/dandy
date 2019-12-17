@@ -17,10 +17,14 @@
 * When a Clutter canvas is invalidated, the new contents are undefined. Make
   sure to always clear the canvas using a Cairo paint (with the appropriate
   operator) before rendering to a canvas.
+* Velocities added by mouse are offset from the mouse position by about a cell.
 ## Simulation
 * Make advection flow forwards in time, despite numerical instability. Try to
   find a way to keep it stable even while doing this.
 * Switch from rectangular grids to square grids.
+* Mouse velocity impulse should be over a gaussian region, not at a point.
+* Add some kind of drag term to the field (that gradually brings the field back
+  to zero if left alone).
 ## Code quality
 * Find a way to use the Laplacian/divergence functions in the various Gauss-
   Seidel algorithms. Maybe the code will be optimized down to something similar
