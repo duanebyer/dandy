@@ -14,7 +14,7 @@ internal class Air {
 
 	private VectorField _vel;
 	private VectorField _vel_next;
-	private Field _pressure;
+	private VectorField _vel_laplacian;
 
 	public double viscosity {
 		get { return this._viscosity; }
@@ -34,8 +34,8 @@ internal class Air {
 	public VectorField velocity {
 		get { return this._vel; }
 	}
-	public Field pressure {
-		get { return this._pressure; }
+	public VectorField velocity_laplacian {
+		get { return this._vel_laplacian; }
 	}
 
 	public Air(
@@ -51,26 +51,19 @@ internal class Air {
 		this._vel = new VectorField(
 			this._count_x, this._count_y,
 			this._cell_width, this._cell_height,
-			FieldBoundary.ANTI_OPEN, FieldBoundary.OPEN,
-			FieldBoundary.OPEN, FieldBoundary.ANTI_OPEN);
-		this._vel_next = new VectorField(
-			this._count_x, this._count_y,
-			this._cell_width, this._cell_height,
-			FieldBoundary.ANTI_OPEN, FieldBoundary.OPEN,
-			FieldBoundary.OPEN, FieldBoundary.ANTI_OPEN);
-		this._pressure = new Field(
-			this._count_x + 1, this._count_y + 1,
-			this._cell_width, this._cell_height,
-			FieldBoundary.OPEN, FieldBoundary.OPEN);
+			FieldBoundary.OPEN, FieldBoundary.OPEN,
+			FieldBoundary.OPEN, FieldBoundary.FIXED);
+		this._vel_next = new VectorField.clone(this._vel);
+		this._vel_laplacian = new VectorField.clone(this._vel);
 		this._viscosity = viscosity;
 	}
 
 	public void update(double delta) {
-		this._vel.advect(delta, ref this._vel_next);
+		this._vel.advect_in_field(ref this._vel_next, delta);
 		Util.swap(ref this._vel, ref this._vel_next);
-		this._vel.diffuse(this._viscosity, ref this._vel_next, true);
+		this._vel.diffuse_in_field(ref this._vel_next, delta, this._viscosity);
 		Util.swap(ref this._vel, ref this._vel_next);
-		this._vel.project(ref this._vel_next, ref this._pressure, true);
+		this._vel.project_in_field(ref this._vel_next, ref this._vel_laplacian);
 		Util.swap(ref this._vel, ref this._vel_next);
 	}
 

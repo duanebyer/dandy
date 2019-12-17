@@ -81,13 +81,18 @@ internal class Field {
 		this.zero();
 	}
 
-	// Returns whether this field has the same parameters as another field.
+	// Returns whether this field has the same parameters as another field. Note
+	// that two fields with different boundary conditions are still compatible.
 	public bool compatible(Field other) {
 		return this._vals.length[0] == other._vals.length[0]
 			&& this._vals.length[1] == other._vals.length[1]
 			&& this._cell_width == other._cell_width
-			&& this._cell_height == other._cell_height
-			&& this._boundary_x == other._boundary_x;
+			&& this._cell_height == other._cell_height;
+	}
+
+	public bool compatible_boundaries(Field other) {
+		return this._boundary_x == other._boundary_x
+			&& this._boundary_y == other._boundary_y;
 	}
 
 	// Copies the data from a compatible field into this field.
@@ -257,53 +262,82 @@ internal class Field {
 		return result;
 	}
 
-	// Diffusion allows the field to "spread out" at a rate given by the
-	// diffusion coefficient.
+	public Field poisson_solve(
+			double alpha = 1,
+			double beta = 0) {
+		Field result = new Field(
+			this.count_x, this.count_y,
+			this._cell_width, this._cell_height,
+			FieldBoundary.OPEN, FieldBoundary.OPEN);
+		poisson_solve_in_field(ref result, alpha, beta);
+		return result;
+	}
+
+	// Solves a Poisson equation of the form:
+	//   (beta * I + alpha * nabla^2) result = this
 	// 
-	// The `initial_guess` parameter indicates whether the provided `result`
-	// column will be taken as a starting point for finding the solution.
-	// TODO: Remake this to be a special case of a general Poisson solver.
-	public void diffuse(
-			double diffusivity,
-			ref Field? result,
-			bool initial_guess = false) {
-		if (result == null || !result.compatible(this)) {
-			result = new Field.clone(this);
-		}
-		if (!initial_guess) {
-			result.zero();
-		}
+	// The result will be stored in the provided field, which also acts as an
+	// initial guess at the solution.
+	public Field poisson_solve_in_field(
+			ref Field result,
+			double alpha = 1,
+			double beta = 0) {
+		assert(result.compatible(this));
 		// Use the Gauss-Seidel method to solve the sparse linear equation:
-		//   A = (I - diffusivity * nabla^2)
+		//   A = (beta * I + alpha * nabla^2)
 		//   b = this
 		//   x = result
 		// Solve Ax = b:
 		// TODO: Choose omega in a smarter way.
-		double omega = 1.8;
-		double b = diffusivity;
-		double a = 1 / (1
-			+ 2 * b / Util.square(result.cell_width)
-			+ 2 * b / Util.square(result.cell_height));
+		double omega = 1.5;
+		double norm = beta
+			- 2 * alpha / Util.square(result.cell_width)
+			- 2 * alpha / Util.square(result.cell_height);
 		// TODO: Replace the fixed iteration count with something based on the
 		// convergence rate.
 		for (uint iter = 0; iter < 40; ++iter) {
 			for (int j = 1; j < this._vals.length[1] - 1; ++j) {
 				for (int i = 1; i < this._vals.length[0] - 1; ++i) {
-					double difference = this._vals[i, j] - result._vals[i, j];
+					double target = this._vals[i, j];
+					double identity = result._vals[i, j];
 					double laplacian_x = 1 / Util.square(result.cell_width)
-						* (-2 * result.vals[i, j]
-							+ result.vals[i - 1, j]
-							+ result.vals[i + 1, j]);
+						* (-2 * result._vals[i, j]
+							+ result._vals[i - 1, j]
+							+ result._vals[i + 1, j]);
 					double laplacian_y = 1 / Util.square(result.cell_height)
-						* (-2 * result.vals[i, j]
-							+ result.vals[i, j - 1]
-							+ result.vals[i, j + 1]);
+						* (-2 * result._vals[i, j]
+							+ result._vals[i, j - 1]
+							+ result._vals[i, j + 1]);
 					double laplacian = laplacian_x + laplacian_y;
-					result._vals[i, j] += omega * a * (difference + b * laplacian);
+					result._vals[i, j] += omega / norm * (
+						target - beta * identity - alpha * laplacian);
 				}
 			}
+			// TODO: Should consider the case where the boundary conditions do
+			// not exclude all harmonic fields (e.x. if both boundaries are
+			// open, allowing for any constant to be added).
 			result.update_boundaries();
 		}
+		return result;
+	}
+
+	public Field diffuse(
+			double delta,
+			double diffusivity) {
+		Field result = new Field.clone(this);
+		return this.diffuse_in_field(ref result, delta, diffusivity);
+	}
+
+	// Diffusion allows the field to "spread out" at a rate given by the
+	// diffusion coefficient.
+	public Field diffuse_in_field(
+			ref Field result,
+			double delta,
+			double diffusivity) {
+		assert(result.compatible(this));
+		assert(result.compatible_boundaries(this));
+		this.poisson_solve_in_field(ref result, -diffusivity * delta, 1);
+		return result;
 	}
 
 	// Takes an index and moves it in bounds, with a sign change if necessary.

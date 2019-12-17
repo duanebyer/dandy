@@ -62,10 +62,14 @@ internal class VectorField {
 			boundary_yx, boundary_yy);
 	}
 
-	// Returns whether this field has the same parameters as another field.
 	public bool compatible(VectorField other) {
 		return this._field_x.compatible(other._field_x)
 			&& this._field_y.compatible(other._field_y);
+	}
+
+	public bool compatible_boundaries(VectorField other) {
+		return this._field_x.compatible_boundaries(other._field_x)
+			&& this._field_y.compatible_boundaries(other._field_y);
 	}
 
 	public void copy_from(VectorField other) {
@@ -171,23 +175,61 @@ internal class VectorField {
 			this._field_y.boundary_average());
 	}
 
-	public void diffuse(
-			double diffusivity,
-			ref VectorField? result,
-			bool initial_guess = false) {
-		if (result == null || !result.compatible(this)) {
-			result = new VectorField.clone(this);
-		}
-		this._field_x.diffuse(diffusivity, ref result._field_x, initial_guess);
-		this._field_y.diffuse(diffusivity, ref result._field_y, initial_guess);
+	public VectorField poisson_solve(
+			double alpha = 1,
+			double beta = 0) {
+		VectorField result = new VectorField(
+			this.count_x, this.count_y,
+			this._field_x.cell_width, this._field_x.cell_height,
+			FieldBoundary.OPEN, FieldBoundary.OPEN,
+			FieldBoundary.OPEN, FieldBoundary.OPEN);
+		return this.poisson_solve_in_field(ref result, alpha, beta);
+	}
+
+	public VectorField poisson_solve_in_field(
+			ref VectorField result,
+			double alpha = 1,
+			double beta = 0) {
+		assert(result.compatible(this));
+		this._field_x.poisson_solve_in_field(ref result._field_x, alpha, beta);
+		this._field_y.poisson_solve_in_field(ref result._field_y, alpha, beta);
+		return result;
+	}
+
+	public VectorField diffuse(
+			double delta,
+			double diffusivity) {
+		VectorField result = new VectorField.clone(this);
+		return this.diffuse_in_field(ref result, delta, diffusivity);
+	}
+
+	public VectorField diffuse_in_field(
+			ref VectorField result,
+			double delta,
+			double diffusivity) {
+		assert(result.compatible(this));
+		assert(result.compatible_boundaries(this));
+		this._field_x.diffuse_in_field(ref result._field_x, delta, diffusivity);
+		this._field_y.diffuse_in_field(ref result._field_y, delta, diffusivity);
+		return result;
+	}
+
+	public VectorField advect(double delta) {
+		VectorField result = new VectorField(
+			this.count_x, this.count_y,
+			this._field_x.cell_width, this._field_x.cell_height,
+			this._field_x.boundary_x, this._field_x.boundary_y,
+			this._field_y.boundary_x, this._field_y.boundary_y);
+		return this.advect_in_field(ref result, delta);
 	}
 
 	// Advects this vector field a small amount `delta` in time and puts the
 	// result into another vector field.
-	public void advect(double delta, ref VectorField? result) {
-		if (result == null || !result.compatible(this)) {
-			result = new VectorField.clone(this);
-		}
+	public VectorField advect_in_field(
+			ref VectorField result,
+			double delta) {
+		assert(result.compatible(this));
+		assert(result.compatible_boundaries(this));
 		// Trace a particle backwards in the fluid by a time `delta`. Take the
 		// velocity field at the particle's previous position, and set the
 		// velocity at the current position to the new value.
@@ -206,123 +248,65 @@ internal class VectorField {
 			}
 		}
 		result.update_boundaries();
+		return result;
 	}
 
-	// Splits the field into a pure curl part and a pure divergence part. The
-	// pure divergence part is returned in the form of a potential, the gradient
-	// of which gives the pure divergence field.
-	// 
-	// The `initial_guess` parameter can be used to indicate whether the
-	// provided potential is a starting guess at the true potential.
-	public void project(
-			ref VectorField? curl_part,
-			ref Field? potential,
-			bool initial_guess = false) {
-		// There are several ways to handle the boundary conditions. Together,
-		// the boundary conditions must combine to form the boundary conditions
-		// of the original vector field. The easiest way to do this is to
-		// require that the divergence part is zero at the boundaries, and that
-		// the curl part matches the boundary conditions of the original field.
-		if (curl_part == null || !curl_part.compatible(this)) {
-			curl_part = new VectorField.clone(this);
-		}
-		if (potential == null
-				|| potential.count_x != this._field_x.count_x + 1
-				|| potential.count_y != this._field_x.count_y + 1
-				|| potential.cell_width != this._field_x.cell_width
-				|| potential.cell_height != this._field_x.cell_height
-				|| potential.boundary_x != FieldBoundary.OPEN
-				|| potential.boundary_y != FieldBoundary.OPEN) {
-			potential = new Field(
-				this.count_x + 1, this.count_y + 1,
-				this._field_x.cell_width, this._field_x.cell_height,
-				FieldBoundary.OPEN, FieldBoundary.OPEN);
-		}
-		if (!initial_guess) {
-			potential.zero();
-		}
+	public VectorField project() {
+		VectorField result = new VectorField.clone(this);
+		VectorField laplacian_field = new VectorField(
+			this.count_x, this.count_y,
+			this._field_x.cell_width, this._field_x.cell_height,
+			FieldBoundary.OPEN, FieldBoundary.OPEN,
+			FieldBoundary.OPEN, FieldBoundary.OPEN);
+		return this.project_in_field(ref result, ref laplacian_field);
+	}
 
-		// We will use the x component of the curl field to temporarily store
-		// the divergence of the field (to avoid another allocation).
-		Field divergence_field = curl_part._field_x;
-		for (int j = 0; j < this._field_x.vals.length[1] - 1; ++j) {
-			for (int i = 0; i < this._field_x.vals.length[0] - 1; ++i) {
-				double divergence_x = 1 / (2 * this._field_x.cell_width)
-					* (this._field_x.vals[i + 1, j]
-						+ this._field_x.vals[i + 1, j + 1]
-						- this._field_x.vals[i, j]
-						- this._field_x.vals[i, j + 1]);
-				double divergence_y = 1 / (2 * this._field_x.cell_height)
-					* (this._field_y.vals[i, j + 1]
-						+ this._field_y.vals[i + 1, j + 1]
-						- this._field_y.vals[i, j]
-						- this._field_y.vals[i + 1, j]);
-				divergence_field.vals[i, j] = divergence_x + divergence_y;
+	// Finds the divergence-free part of this vector field.
+	public VectorField project_in_field(
+			ref VectorField result,
+			ref VectorField laplacian_field) {
+		assert(result.compatible(this));
+		assert(result.compatible_boundaries(this));
+		assert(laplacian_field.compatible(this));
+		// We will calculate the curl of the curl of this vector field, and
+		// store it in the `laplacian_field` variable.
+		for (int j = 1; j < this._field_x.vals.length[1] - 1; ++j) {
+			for (int i = 1; i < this._field_x.vals.length[0] - 1; ++i) {
+				double v_xx = -1 / (4 * Util.square(this._field_x.cell_height))
+					* (this._field_x.vals[i - 1, j - 1]
+						- 2 * this._field_x.vals[i - 1, j]
+						+ this._field_x.vals[i - 1, j + 1]
+						+ 2 * this._field_x.vals[i, j - 1]
+						- 4 * this._field_x.vals[i, j]
+						+ 2 * this._field_x.vals[i, j + 1]
+						+ this._field_x.vals[i + 1, j - 1]
+						- 2 * this._field_x.vals[i + 1, j]
+						+ this._field_x.vals[i + 1, j + 1]);
+				double v_xy = 1 / (4 * this._field_x.cell_area)
+					* (this._field_y.vals[i - 1, j - 1]
+						- this._field_y.vals[i - 1, j + 1]
+						- this._field_y.vals[i + 1, j - 1]
+						+ this._field_y.vals[i + 1, j + 1]);
+				double v_yx = 1 / (4 * this._field_x.cell_area)
+					* (this._field_x.vals[i - 1, j - 1]
+						- this._field_x.vals[i + 1, j - 1]
+						- this._field_x.vals[i - 1, j + 1]
+						+ this._field_x.vals[i + 1, j + 1]);
+				double v_yy = -1 / (4 * Util.square(this._field_x.cell_width))
+					* (this._field_y.vals[i - 1, j - 1]
+						- 2 * this._field_y.vals[i, j - 1]
+						+ this._field_y.vals[i + 1, j - 1]
+						+ 2 * this._field_y.vals[i - 1, j]
+						- 4 * this._field_y.vals[i, j]
+						+ 2 * this._field_y.vals[i + 1, j]
+						+ this._field_y.vals[i - 1, j + 1]
+						- 2 * this._field_y.vals[i, j + 1]
+						+ this._field_y.vals[i + 1, j + 1]);
+				laplacian_field._field_x.vals[i, j] = -(v_xx + v_xy);
+				laplacian_field._field_y.vals[i, j] = -(v_yx + v_yy);
 			}
 		}
-		// Use the Gauss-Seidel method to solve the sparse linear equation:
-		//   A = nabla^2
-		//   b = div this
-		//   x = potential
-		// This will give the potential for the pure divergence part.
-		// Solve Ax = b:
-		// TODO: Choose omega in a smarter way.
-		double omega = 1.8;
-		double a = -1 / (
-			2 / Util.square(potential.cell_width)
-			+ 2 / Util.square(potential.cell_height));
-		for (uint iter = 0; iter < 40; ++iter) {
-			for (int j = 1; j < this._field_x.vals.length[1]; ++j) {
-				for (int i = 1; i < this._field_x.vals.length[0]; ++i) {
-					double laplacian_x = 1 / Util.square(potential.cell_width)
-						* (-2 * potential.vals[i, j]
-							+ potential.vals[i - 1, j]
-							+ potential.vals[i + 1, j]);
-					double laplacian_y = 1 / Util.square(potential.cell_height)
-						* (-2 * potential.vals[i, j]
-							+ potential.vals[i, j - 1]
-							+ potential.vals[i, j + 1]);
-					double laplacian = laplacian_x + laplacian_y;
-					double divergence = divergence_field.vals[i - 1, j - 1];
-					potential.vals[i, j] += a * omega * (divergence - laplacian);
-				}
-			}
-			potential.update_boundaries();
-			// Since the potential can be shifted by a constant without changing
-			// its gradient, fix the average of the boundary of the potential to
-			// zero.
-			double boundary_average = potential.boundary_average();
-			for (int j = 0; j < potential.vals.length[1]; ++j) {
-				for (int i = 0; i < potential.vals.length[0]; ++i) {
-					potential.vals[i, j] -= boundary_average;
-				}
-			}
-		}
-
-		// Subtract the gradient of the potential from the velocity field to
-		// remove any divergences, leaving only the curl part.
-		for (int j = 0; j < potential.vals.length[1] - 1; ++j) {
-			for (int i = 0; i < potential.vals.length[0] - 1; ++i) {
-				Util.Vector divergence_part = Util.Vector(
-					1 / (2 * potential.cell_width)
-						* (potential.vals[i + 1, j]
-							+ potential.vals[i + 1, j + 1]
-							- potential.vals[i, j]
-							- potential.vals[i, j + 1]),
-					1 / (2 * potential.cell_height)
-						* (potential.vals[i, j + 1]
-							+ potential.vals[i + 1, j + 1]
-							- potential.vals[i, j]
-							- potential.vals[i + 1, j]));
-				curl_part._field_x.vals[i, j] =
-					this._field_x.vals[i, j] - divergence_part.x;
-				curl_part._field_y.vals[i, j] =
-					this._field_y.vals[i, j] - divergence_part.y;
-			}
-		}
-		// The boundary conditions should be automatically satisfied on the curl
-		// part, but do it here again anyway, just in case.
-		curl_part.update_boundaries();
+		return laplacian_field.poisson_solve_in_field(ref result);
 	}
 
 	public void update_boundaries() {

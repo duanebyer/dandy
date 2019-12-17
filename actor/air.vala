@@ -12,7 +12,7 @@ internal class Air : Clutter.Actor {
 
 	private const double DELTA = 0.05;
 	private const double CELL_SIZE = 50;
-	private const double VISCOSITY = 0.5;
+	private const double VISCOSITY = 100.0;
 
 	public Physics.Air physics {
 		get { return this._air_physics; }
@@ -75,38 +75,12 @@ internal class Air : Clutter.Actor {
 
 	private void on_draw(Cairo.Context ctx) {
 		Physics.VectorField vel_field = this._air_physics.velocity;
-		Physics.Field pressure_field = this._air_physics.pressure;
 
 		// Clear the existing canvas content.
 		ctx.save();
 		ctx.set_operator(Cairo.Operator.SOURCE);
 		ctx.set_source_rgba(0, 0, 0, 0);
 		ctx.paint();
-		ctx.restore();
-
-		// Draw the pressure.
-		ctx.save();
-		ctx.translate(
-			-0.5 * pressure_field.cell_width,
-			-0.5 * pressure_field.cell_height);
-		ctx.set_operator(Cairo.Operator.SOURCE);
-		for (int j = 0; j < pressure_field.count_y; ++j) {
-			ctx.save();
-			for(int i = 0; i < pressure_field.count_x; ++i) {
-				double pressure = pressure_field.get_index(i, j);
-				double alpha = (5e-2 * Math.log(pressure.abs())).clamp(0, 0.6);
-				double red = pressure > 0 ? 1 : 0;
-				double blue = pressure <= 0 ? 1 : 0;
-				ctx.rectangle(0, 0,
-					pressure_field.cell_width,
-					pressure_field.cell_height);
-				ctx.set_source_rgba(red, 0, blue, alpha);
-				ctx.fill();
-				ctx.translate(pressure_field.cell_width, 0);
-			}
-			ctx.restore();
-			ctx.translate(0, pressure_field.cell_height);
-		}
 		ctx.restore();
 
 		// Draw velocity vectors.
