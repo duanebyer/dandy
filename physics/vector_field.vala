@@ -214,40 +214,27 @@ internal class VectorField {
 		return result;
 	}
 
-	public VectorField advect(double delta) {
+	public VectorField advect(
+			VectorField vel_field,
+			double delta) {
 		VectorField result = new VectorField(
 			this.count_x, this.count_y,
 			this._field_x.cell_width, this._field_x.cell_height,
 			this._field_x.boundary_x, this._field_x.boundary_y,
 			this._field_y.boundary_x, this._field_y.boundary_y);
-		return this.advect_in_field(ref result, delta);
+		return this.advect_in_field(ref result, vel_field, delta);
 	}
 
 	// Advects this vector field a small amount `delta` in time and puts the
 	// result into another vector field.
 	public VectorField advect_in_field(
 			ref VectorField result,
+			VectorField vel_field,
 			double delta) {
 		assert(result.compatible(this));
 		assert(result.compatible_boundaries(this));
-		// Trace a particle backwards in the fluid by a time `delta`. Take the
-		// velocity field at the particle's previous position, and set the
-		// velocity at the current position to the new value.
-		for (int j = 1; j < this._field_x.vals.length[1] - 1; ++j) {
-			for (int i = 1; i < this._field_y.vals.length[0] - 1; ++i) {
-				Util.Vector pos = Util.Vector(
-					(i - 1) * this._field_x.cell_width,
-					(j - 1) * this._field_y.cell_height);
-				Util.Vector vel = Util.Vector(
-					this._field_x.vals[i, j],
-					this._field_y.vals[i, j]);
-				Util.Vector pos_prev = pos.sub(vel.scale(delta));
-				Util.Vector vel_prev = this.get_pos(pos_prev);
-				result._field_x.vals[i, j] = vel_prev.x;
-				result._field_y.vals[i, j] = vel_prev.y;
-			}
-		}
-		result.update_boundaries();
+		this._field_x.advect_in_field(ref result._field_x, vel_field, delta);
+		this._field_y.advect_in_field(ref result._field_y, vel_field, delta);
 		return result;
 	}
 

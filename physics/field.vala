@@ -340,6 +340,37 @@ internal class Field {
 		return result;
 	}
 
+	public Field advect(
+			VectorField vel_field,
+			double delta) {
+		Field result = new Field.clone(this);
+		return this.advect_in_field(ref result, vel_field, delta);
+	}
+
+	// Transports the contents of this field through the provided flow.
+	public Field advect_in_field(
+			ref Field result,
+			VectorField vel_field,
+			double delta) {
+		assert(result.compatible(this));
+		assert(result.compatible_boundaries(this));
+		// Trace backwards in the flow by a time `delta`.
+		for (int j = 1; j < this._vals.length[1] - 1; ++j) {
+			for (int i = 1; i < this._vals.length[0] - 1; ++i) {
+				Util.Vector pos = Util.Vector(
+					(i - 1) * this._cell_width,
+					(j - 1) * this._cell_height);
+				Util.Vector vel = Util.Vector(
+					vel_field.x._vals[i, j],
+					vel_field.y._vals[i, j]);
+				Util.Vector pos_prev = pos.sub(vel.scale(delta));
+				result._vals[i, j] = this.get_pos(pos_prev);
+			}
+		}
+		result.update_boundaries();
+		return result;
+	}
+
 	// Takes an index and moves it in bounds, with a sign change if necessary.
 	private static int move_index_in_bounds(
 			int i,

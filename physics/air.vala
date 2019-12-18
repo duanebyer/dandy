@@ -59,7 +59,7 @@ internal class Air {
 	}
 
 	public void update(double delta) {
-		this._vel.advect_in_field(ref this._vel_next, delta);
+		this._vel.advect_in_field(ref this._vel_next, this._vel, delta);
 		Util.swap(ref this._vel, ref this._vel_next);
 		this._vel.diffuse_in_field(ref this._vel_next, delta, this._viscosity);
 		Util.swap(ref this._vel, ref this._vel_next);
