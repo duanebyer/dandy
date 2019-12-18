@@ -322,8 +322,8 @@ internal class Field {
 	}
 
 	public Field diffuse(
-			double delta,
-			double diffusivity) {
+			double diffusivity,
+			double delta) {
 		Field result = new Field.clone(this);
 		return this.diffuse_in_field(ref result, delta, diffusivity);
 	}
@@ -332,8 +332,8 @@ internal class Field {
 	// diffusion coefficient.
 	public Field diffuse_in_field(
 			ref Field result,
-			double delta,
-			double diffusivity) {
+			double diffusivity,
+			double delta) {
 		assert(result.compatible(this));
 		assert(result.compatible_boundaries(this));
 		this.poisson_solve_in_field(ref result, -diffusivity * delta, 1);

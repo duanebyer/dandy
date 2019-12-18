@@ -197,16 +197,16 @@ internal class VectorField {
 	}
 
 	public VectorField diffuse(
-			double delta,
-			double diffusivity) {
+			double diffusivity,
+			double delta) {
 		VectorField result = new VectorField.clone(this);
 		return this.diffuse_in_field(ref result, delta, diffusivity);
 	}
 
 	public VectorField diffuse_in_field(
 			ref VectorField result,
-			double delta,
-			double diffusivity) {
+			double diffusivity,
+			double delta) {
 		assert(result.compatible(this));
 		assert(result.compatible_boundaries(this));
 		this._field_x.diffuse_in_field(ref result._field_x, delta, diffusivity);
