@@ -12,10 +12,10 @@ internal enum FieldBoundary {
 
 internal class Field {
 	private double[,] _vals;
+	private double _width;
+	private double _height;
 	private FieldBoundary _boundary_x;
 	private FieldBoundary _boundary_y;
-	private double _cell_width;
-	private double _cell_height;
 
 	// Note that vals contains the boundary cells as well as the cells in the
 	// bulk of the field. Generally, it is better to directly use the accessor
@@ -25,13 +25,16 @@ internal class Field {
 	}
 
 	public Util.Bounds bounds {
-		get { return Util.Bounds(0, 0, this.width, this.height); }
+		get { return Util.Bounds(0, 0, this._width, this._height); }
 	}
 	public double width {
-		get { return this.count_x * this._cell_width; }
+		get { return this._width; }
 	}
 	public double height {
-		get { return this.count_y * this._cell_height; }
+		get { return this._height; }
+	}
+	public double area {
+		get { return this._width * this._height; }
 	}
 
 	public uint count_x {
@@ -42,13 +45,13 @@ internal class Field {
 	}
 
 	public double cell_width {
-		get { return this._cell_width; }
+		get { return this._width / this.count_x; }
 	}
 	public double cell_height {
-		get { return this._cell_height; }
+		get { return this._height / this.count_y; }
 	}
 	public double cell_area {
-		get { return this._cell_width * this._cell_height; }
+		get { return this.cell_width * this.cell_height; }
 	}
 
 	public FieldBoundary boundary_x {
@@ -60,8 +63,8 @@ internal class Field {
 
 	public Field.clone(Field other) {
 		this._vals = new double[other._vals.length[0], other._vals.length[1]];
-		this._cell_width = other._cell_width;
-		this._cell_height = other._cell_height;
+		this._width = other._width;
+		this._height = other._height;
 		this._boundary_x = other._boundary_x;
 		this._boundary_y = other._boundary_y;
 		this.copy_from(other);
@@ -69,13 +72,13 @@ internal class Field {
 
 	public Field(
 			uint count_x, uint count_y,
-			double cell_width, double cell_height,
+			double width, double height,
 			FieldBoundary boundary_x = FieldBoundary.FIXED,
 			FieldBoundary boundary_y = FieldBoundary.FIXED) {
 		assert(count_x > 0 && count_y > 0);
 		this._vals = new double[count_x + 2, count_y + 2];
-		this._cell_width = cell_width;
-		this._cell_height = cell_height;
+		this._width = width;
+		this._height = height;
 		this._boundary_x = boundary_x;
 		this._boundary_y = boundary_y;
 		this.zero();
@@ -86,8 +89,8 @@ internal class Field {
 	public bool compatible(Field other) {
 		return this._vals.length[0] == other._vals.length[0]
 			&& this._vals.length[1] == other._vals.length[1]
-			&& this._cell_width == other._cell_width
-			&& this._cell_height == other._cell_height;
+			&& this._width == other._width
+			&& this._height == other._height;
 	}
 
 	public bool compatible_boundaries(Field other) {
@@ -158,22 +161,25 @@ internal class Field {
 
 	// Gets the cell which a certain position is located within.
 	public Util.Vector local_cell_pos(Util.Vector pos, out int i, out int j) {
-		double i_f = Math.floor(pos.x / this._cell_width);
-		double j_f = Math.floor(pos.y / this._cell_height);
+		double i_f = Math.floor(pos.x / this.cell_width);
+		double j_f = Math.floor(pos.y / this.cell_height);
 		// Ensure that the conversion to integers won't overflow.
 		assert(!!(i_f > int.MIN && i_f < int.MAX));
 		assert(!!(j_f > int.MIN && j_f < int.MAX));
 		i = (int) i_f;
 		j = (int) j_f;
-		double x_c = pos.x - i * this._cell_width;
-		double y_c = pos.y - j * this._cell_height;
+		double x_c = pos.x - i * this.cell_width;
+		double y_c = pos.y - j * this.cell_height;
 		return Util.Vector(x_c, y_c);
 	}
 
 	public double get_pos(Util.Vector pos) {
 		int i;
 		int j;
-		Util.Vector cell_pos = this.local_cell_pos(pos, out i, out j);
+		Util.Vector offset = Util.Vector(
+			-0.5 * this.cell_width,
+			-0.5 * this.cell_height);
+		Util.Vector cell_pos = this.local_cell_pos(pos.add(offset), out i, out j);
 		double u = cell_pos.x / this.cell_width;
 		double v = cell_pos.y / this.cell_height;
 		return
@@ -190,10 +196,17 @@ internal class Field {
 
 	// Makes the smallest possible change to the vector field near a given
 	// point so that the value at the point increases by some value.
+	// TODO: Reconsider whether this function should even exist at all. It has a
+	// problem where adding a value to the field near a grid point causes the
+	// grid point to be increased greater than the value. Often, this doesn't
+	// make much physical sense.
 	public void add_pos(Util.Vector pos, double value) {
 		int i;
 		int j;
-		Util.Vector cell_pos = this.local_cell_pos(pos, out i, out j);
+		Util.Vector offset = Util.Vector(
+			-0.5 * this.cell_width,
+			-0.5 * this.cell_height);
+		Util.Vector cell_pos = this.local_cell_pos(pos.add(offset), out i, out j);
 		double u = cell_pos.x / this.cell_width;
 		double v = cell_pos.y / this.cell_height;
 		double norm = (1 - 2 * u + 2 * u * u) * (1 - 2 * v + 2 * v * v);
@@ -209,23 +222,23 @@ internal class Field {
 
 	// Returns the x gradient of the field at the point (i + 0.5, y).
 	public double gradient_x(int i, int j) {
-		return (this.get_index(i + 1, j) - this.get_index(i, j)) / this._cell_width;
+		return (this.get_index(i + 1, j) - this.get_index(i, j)) / this.cell_width;
 	}
 
 	// Returns the y gradient of the field at the point (i, j + 0.5).
 	public double gradient_y(int i, int j) {
-		return (this.get_index(i, j + 1) - this.get_index(i, j)) / this._cell_height;
+		return (this.get_index(i, j + 1) - this.get_index(i, j)) / this.cell_height;
 	}
 
 	public double laplacian(int i, int j) {
 		double laplacian_x = (
 				-2 * this.get_index(i, j)
 				+ this.get_index(i - 1, j) + this.get_index(i + 1, j))
-			/ Util.square(this._cell_width);
+			/ Util.square(this.cell_width);
 		double laplacian_y = (
 				-2 * this.get_index(i, j)
 				+ this.get_index(i, j - 1) + this.get_index(i, j + 1))
-			/ Util.square(this._cell_height);
+			/ Util.square(this.cell_height);
 		return laplacian_x + laplacian_y;
 	}
 
@@ -267,7 +280,7 @@ internal class Field {
 			double beta = 0) {
 		Field result = new Field(
 			this.count_x, this.count_y,
-			this._cell_width, this._cell_height,
+			this._width, this._height,
 			FieldBoundary.OPEN, FieldBoundary.OPEN);
 		poisson_solve_in_field(ref result, alpha, beta);
 		return result;
@@ -358,8 +371,8 @@ internal class Field {
 		for (int j = 1; j < this._vals.length[1] - 1; ++j) {
 			for (int i = 1; i < this._vals.length[0] - 1; ++i) {
 				Util.Vector pos = Util.Vector(
-					(i - 1) * this._cell_width,
-					(j - 1) * this._cell_height);
+					(i - 0.5) * this.cell_width,
+					(j - 0.5) * this.cell_height);
 				Util.Vector vel = Util.Vector(
 					vel_field.x._vals[i, j],
 					vel_field.y._vals[i, j]);

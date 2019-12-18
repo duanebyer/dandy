@@ -15,6 +15,9 @@ internal class VectorField {
 	public double height {
 		get { return this._field_x.height; }
 	}
+	public double area {
+		get { return this._field_x.area; }
+	}
 
 	public uint count_x {
 		get { return this._field_x.count_x; }
@@ -47,18 +50,18 @@ internal class VectorField {
 
 	public VectorField(
 			uint count_x, uint count_y,
-			double cell_width, double cell_height,
+			double width, double height,
 			FieldBoundary boundary_xx = FieldBoundary.FIXED,
 			FieldBoundary boundary_xy = FieldBoundary.OPEN,
 			FieldBoundary boundary_yx = FieldBoundary.OPEN,
 			FieldBoundary boundary_yy = FieldBoundary.FIXED) {
 		this._field_x = new Field(
 			count_x, count_y,
-			cell_width, cell_height,
+			width, height,
 			boundary_xx, boundary_xy);
 		this._field_y = new Field(
 			count_x, count_y,
-			cell_width, cell_height,
+			width, height,
 			boundary_yx, boundary_yy);
 	}
 
@@ -180,7 +183,7 @@ internal class VectorField {
 			double beta = 0) {
 		VectorField result = new VectorField(
 			this.count_x, this.count_y,
-			this._field_x.cell_width, this._field_x.cell_height,
+			this._field_x.width, this._field_x.height,
 			FieldBoundary.OPEN, FieldBoundary.OPEN,
 			FieldBoundary.OPEN, FieldBoundary.OPEN);
 		return this.poisson_solve_in_field(ref result, alpha, beta);
@@ -219,7 +222,7 @@ internal class VectorField {
 			double delta) {
 		VectorField result = new VectorField(
 			this.count_x, this.count_y,
-			this._field_x.cell_width, this._field_x.cell_height,
+			this._field_x.width, this._field_x.height,
 			this._field_x.boundary_x, this._field_x.boundary_y,
 			this._field_y.boundary_x, this._field_y.boundary_y);
 		return this.advect_in_field(ref result, vel_field, delta);
@@ -242,7 +245,7 @@ internal class VectorField {
 		VectorField result = new VectorField.clone(this);
 		VectorField laplacian_field = new VectorField(
 			this.count_x, this.count_y,
-			this._field_x.cell_width, this._field_x.cell_height,
+			this._field_x.width, this._field_x.height,
 			FieldBoundary.OPEN, FieldBoundary.OPEN,
 			FieldBoundary.OPEN, FieldBoundary.OPEN);
 		return this.project_in_field(ref result, ref laplacian_field);
