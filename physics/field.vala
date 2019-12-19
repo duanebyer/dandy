@@ -124,8 +124,6 @@ internal class Field {
 	}
 
 	public void set_index(int i, int j, double value) {
-		// TODO: Update the boundary cell (if you set an index right next to a
-		// boundary cell).
 		int sign_i;
 		int sign_j;
 		i = Field.move_index_in_bounds(i, this.count_x, this._boundary_x, out sign_i);
@@ -133,11 +131,15 @@ internal class Field {
 		if (sign_i * sign_j != 0) {
 			this._vals[i + 1, j + 1] = sign_i * sign_j * value;
 		}
+		if (i == 0 || i == this._vals.length[0] - 2) {
+			this.update_boundary_y_index(i);
+		}
+		if (j == 0 || j == this._vals.length[1] - 2) {
+			this.update_boundary_x_index(j);
+		}
 	}
 
 	public void add_index(int i, int j, double value) {
-		// TODO: Update the boundary cell (if you set an index right next to a
-		// boundary cell).
 		int sign_i;
 		int sign_j;
 		i = Field.move_index_in_bounds(i, this.count_x, this._boundary_x, out sign_i);
@@ -145,17 +147,27 @@ internal class Field {
 		if (sign_i * sign_j != 0) {
 			this._vals[i + 1, j + 1] += sign_i * sign_j * value;
 		}
+		if (i == 0 || i == this._vals.length[0] - 2) {
+			this.update_boundary_y_index(i);
+		}
+		if (j == 0 || j == this._vals.length[1] - 2) {
+			this.update_boundary_x_index(j);
+		}
 	}
 
 	public void sub_index(int i, int j, double value) {
-		// TODO: Update the boundary cell (if you set an index right next to a
-		// boundary cell).
 		int sign_i;
 		int sign_j;
 		i = Field.move_index_in_bounds(i, this.count_x, this._boundary_x, out sign_i);
 		j = Field.move_index_in_bounds(j, this.count_y, this._boundary_y, out sign_j);
 		if (sign_i * sign_j != 0) {
 			this._vals[i + 1, j + 1] -= sign_i * sign_j * value;
+		}
+		if (i == 0 || i == this._vals.length[0] - 2) {
+			this.update_boundary_y_index(i);
+		}
+		if (j == 0 || j == this._vals.length[1] - 2) {
+			this.update_boundary_x_index(j);
 		}
 	}
 
@@ -400,6 +412,123 @@ internal class Field {
 		return result;
 	}
 
+	public void update_boundaries() {
+		uint nx = this._vals.length[0];
+		uint ny = this._vals.length[1];
+		for (uint i = 1; i < nx - 1; ++i) {
+			double value_1 = this._vals[i, 1];
+			double value_2 = this._vals[i, ny - 2];
+			double boundary_1;
+			double boundary_2;
+			this.apply_boundary(
+				this._boundary_y,
+				value_1, value_2,
+				out boundary_1, out boundary_2);
+			this._vals[i, 0] = boundary_1;
+			this._vals[i, ny - 1] = boundary_2;
+		}
+
+		for (uint j = 1; j < ny - 1; ++j) {
+			double value_1 = this._vals[1, j];
+			double value_2 = this._vals[nx - 2, j];
+			double boundary_1;
+			double boundary_2;
+			this.apply_boundary(
+				this._boundary_x,
+				value_1, value_2,
+				out boundary_1, out boundary_2);
+			this._vals[0, j] = boundary_1;
+			this._vals[nx - 1, j] = boundary_2;
+		}
+		this.update_boundary_corners();
+	}
+
+	public void update_boundary_corners() {
+		// Set the corner cells to an average of the ones bordering it.
+		uint nx = this._vals.length[0];
+		uint ny = this._vals.length[1];
+		this._vals[0, 0] =
+			0.5 * (this._vals[0, 1] + this._vals[1, 0]);
+		this._vals[nx - 1, 0] =
+			0.5 * (this._vals[nx - 1, 1] + this._vals[nx - 2, 0]);
+		this._vals[0, ny - 1] =
+			0.5 * (this._vals[0, ny - 2] + this._vals[1, ny - 1]);
+		this._vals[nx - 1, ny - 1] =
+			0.5 * (this._vals[nx - 1, ny - 2] + this._vals[nx - 2, ny - 1]);
+	}
+
+	// Updates boundary cells in a particular column.
+	public void update_boundary_y_index(int i) {
+		int sign_i;
+		i = Field.move_index_in_bounds(i, this.count_x, this._boundary_x, out sign_i);
+		double value_1 = this._vals[i + 1, 1];
+		double value_2 = this._vals[i + 1, this._vals.length[1] - 2];
+		double boundary_1;
+		double boundary_2;
+		this.apply_boundary(
+			this._boundary_y,
+			value_1, value_2,
+			out boundary_1, out boundary_2);
+		this._vals[i + 1, 0] = boundary_1;
+		this._vals[i + 1, this._vals.length[1] - 1] = boundary_2;
+		if (i == 0 || i == this._vals.length[0] - 2) {
+			update_boundary_corners();
+		}
+	}
+
+	// Updates boundary cells in a particular row.
+	public void update_boundary_x_index(int j) {
+		int sign_j;
+		j = Field.move_index_in_bounds(j, this.count_y, this._boundary_y, out sign_j);
+		double value_1 = this._vals[1, j + 1];
+		double value_2 = this._vals[this._vals.length[0] - 2, j + 1];
+		double boundary_1;
+		double boundary_2;
+		this.apply_boundary(
+			this._boundary_y,
+			value_1, value_2,
+			out boundary_1, out boundary_2);
+		this._vals[0, j + 1] = boundary_1;
+		this._vals[this._vals.length[0] - 1, j + 1] = boundary_2;
+		if (j == 0 || j == this._vals.length[1] - 2) {
+			update_boundary_corners();
+		}
+	}
+
+	private void apply_boundary(
+			FieldBoundary boundary,
+			double value_1,
+			double value_2,
+			out double boundary_1,
+			out double boundary_2) {
+		switch (boundary) {
+		case FieldBoundary.FIXED:
+			boundary_1 = 0;
+			boundary_2 = 0;
+			break;
+		case FieldBoundary.OPEN:
+			boundary_1 = value_1;
+			boundary_2 = value_2;
+			break;
+		case FieldBoundary.ANTI_OPEN:
+			boundary_1 = -value_1;
+			boundary_2 = -value_2;
+			break;
+		case FieldBoundary.PERIODIC:
+			boundary_1 = value_2;
+			boundary_2 = value_1;
+			break;
+		case FieldBoundary.ANTI_PERIODIC:
+			boundary_1 = -value_2;
+			boundary_2 = -value_1;
+			break;
+		default:
+			boundary_1 = 0;
+			boundary_2 = 0;
+			break;
+		}
+	}
+
 	// Takes an index and moves it in bounds, with a sign change if necessary.
 	private static int move_index_in_bounds(
 			int i,
@@ -446,82 +575,6 @@ internal class Field {
 			}
 		}
 		return i;
-	}
-
-	public void update_boundaries() {
-		uint nx = this._vals.length[0];
-		uint ny = this._vals.length[1];
-		for (uint i = 1; i < nx - 1; ++i) {
-			double value_1 = this._vals[i, 1];
-			double value_2 = this._vals[i, ny - 2];
-			double boundary_1 = 0;
-			double boundary_2 = 0;
-			switch (this._boundary_y) {
-			case FieldBoundary.FIXED:
-				boundary_1 = 0;
-				boundary_2 = 0;
-				break;
-			case FieldBoundary.OPEN:
-				boundary_1 = value_1;
-				boundary_2 = value_2;
-				break;
-			case FieldBoundary.ANTI_OPEN:
-				boundary_1 = -value_1;
-				boundary_2 = -value_2;
-				break;
-			case FieldBoundary.PERIODIC:
-				boundary_1 = value_2;
-				boundary_2 = value_1;
-				break;
-			case FieldBoundary.ANTI_PERIODIC:
-				boundary_1 = -value_2;
-				boundary_2 = -value_1;
-				break;
-			}
-			this._vals[i, 0] = boundary_1;
-			this._vals[i, ny - 1] = boundary_2;
-		}
-
-		for (uint j = 1; j < ny - 1; ++j) {
-			double value_1 = this._vals[1, j];
-			double value_2 = this._vals[nx - 2, j];
-			double boundary_1 = 0;
-			double boundary_2 = 0;
-			switch (this._boundary_x) {
-			case FieldBoundary.FIXED:
-				boundary_1 = 0;
-				boundary_2 = 0;
-				break;
-			case FieldBoundary.OPEN:
-				boundary_1 = value_1;
-				boundary_2 = value_2;
-				break;
-			case FieldBoundary.ANTI_OPEN:
-				boundary_1 = -value_1;
-				boundary_2 = -value_2;
-				break;
-			case FieldBoundary.PERIODIC:
-				boundary_1 = value_2;
-				boundary_2 = value_1;
-				break;
-			case FieldBoundary.ANTI_PERIODIC:
-				boundary_1 = -value_2;
-				boundary_2 = -value_1;
-				break;
-			}
-			this._vals[0, j] = boundary_1;
-			this._vals[nx - 1, j] = boundary_2;
-		}
-
-		// Set the corner cells to an average of the ones bordering it.
-		this._vals[0, 0] =
-			0.5 * (this._vals[0, 1] + this._vals[1, 0]);
-		this._vals[nx - 1, 0] =
-			0.5 * (this._vals[nx - 1, 1] + this._vals[nx - 2, 0]);
-		this._vals[0, ny - 1] =
-			0.5 * (this._vals[0, ny - 2] + this._vals[1, ny - 1]);
-		this._vals[nx - 1, ny - 1] =
-			0.5 * (this._vals[nx - 1, ny - 2] + this._vals[nx - 2, ny - 1]);
 	}
 }
 

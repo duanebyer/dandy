@@ -303,6 +303,21 @@ internal class VectorField {
 		this._field_x.update_boundaries();
 		this._field_y.update_boundaries();
 	}
+
+	public void update_boundary_corners() {
+		this._field_x.update_boundary_corners();
+		this._field_y.update_boundary_corners();
+	}
+
+	public void update_boundary_y_index(int i) {
+		this._field_x.update_boundary_y_index(i);
+		this._field_y.update_boundary_y_index(i);
+	}
+
+	public void update_boundary_x_index(int j) {
+		this._field_x.update_boundary_x_index(j);
+		this._field_y.update_boundary_x_index(j);
+	}
 }
 
 }
