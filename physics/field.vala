@@ -256,12 +256,10 @@ internal class Field {
 
 	// Returns the average of the boundary of the field.
 	public double boundary_average() {
-		double result =
-			this._vals[0, 0]
-			+ this._vals[0, this._vals.length[1] - 1]
-			+ this._vals[this._vals.length[0] - 1, 0]
-			+ this._vals[this._vals.length[0] - 1, this._vals.length[1] - 1];
-		for (int i = 1; i < this._vals.length[0] - 1; ++i) {
+		double result = 0;
+		// Note that the four corner cells are included in this first loop but
+		// not the second one, to ensure they are counted only once.
+		for (int i = 0; i < this._vals.length[0]; ++i) {
 			result += this._vals[i, 0];
 			result += this._vals[i, this._vals.length[1] - 1];
 		}
@@ -306,6 +304,7 @@ internal class Field {
 		double norm = beta
 			- 2 * alpha / Util.square(result.cell_width)
 			- 2 * alpha / Util.square(result.cell_height);
+		double target_boundary_average = result.boundary_average();
 		// TODO: Replace the fixed iteration count with something based on the
 		// convergence rate.
 		for (uint iter = 0; iter < 40; ++iter) {
@@ -326,10 +325,27 @@ internal class Field {
 						target - beta * identity - alpha * laplacian);
 				}
 			}
-			// TODO: Should consider the case where the boundary conditions do
-			// not exclude all harmonic fields (e.x. if both boundaries are
-			// open, allowing for any constant to be added).
 			result.update_boundaries();
+			// Sometimes, the boundary conditions can be consistent with an
+			// additional harmonic field (with potential `phi`) that also
+			// satifies the boundary conditions, so that `result` and
+			// `result + phi` are both solutions to the Poisson equation. The
+			// following code deals with the situation where `phi` is a constant
+			// by removing any unwanted constant term that may have shown up in
+			// the solution.
+			if (beta == 0
+					&& (result._boundary_x == FieldBoundary.OPEN
+						|| result._boundary_x == FieldBoundary.PERIODIC)
+					&& (result._boundary_y == FieldBoundary.OPEN
+						|| result._boundary_y == FieldBoundary.PERIODIC)) {
+				double boundary_shift = target_boundary_average
+					- result.boundary_average();
+				for (int j = 0; j < result._vals.length[1]; ++j) {
+					for (int i = 0; i < result._vals.length[0]; ++i) {
+						result._vals[i, j] += boundary_shift;
+					}
+				}
+			}
 		}
 		return result;
 	}
