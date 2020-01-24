@@ -180,17 +180,21 @@ internal class Field {
 		assert(!!(j_f > int.MIN && j_f < int.MAX));
 		i = (int) i_f;
 		j = (int) j_f;
+		// The cell position is measured relative to the corner of the cell.
 		double x_c = pos.x - i * this.cell_width;
 		double y_c = pos.y - j * this.cell_height;
 		return Util.Vector(x_c, y_c);
 	}
 
 	public double get_pos(Util.Vector pos) {
-		int i;
-		int j;
+		// Because we are interpolating the four surrounding cells, we need to
+		// add this offset to the position vector. Otherwise, we would get the
+		// index of the nearest center of a cell.
 		Util.Vector offset = Util.Vector(
 			-0.5 * this.cell_width,
 			-0.5 * this.cell_height);
+		int i;
+		int j;
 		Util.Vector cell_pos = this.local_cell_pos(pos.add(offset), out i, out j);
 		double u = cell_pos.x / this.cell_width;
 		double v = cell_pos.y / this.cell_height;
@@ -213,11 +217,11 @@ internal class Field {
 	// grid point to be increased greater than the value. Often, this doesn't
 	// make much physical sense.
 	public void add_pos(Util.Vector pos, double value) {
-		int i;
-		int j;
 		Util.Vector offset = Util.Vector(
 			-0.5 * this.cell_width,
 			-0.5 * this.cell_height);
+		int i;
+		int j;
 		Util.Vector cell_pos = this.local_cell_pos(pos.add(offset), out i, out j);
 		double u = cell_pos.x / this.cell_width;
 		double v = cell_pos.y / this.cell_height;
@@ -232,7 +236,7 @@ internal class Field {
 		this.add_pos(pos, -value);
 	}
 
-	// Returns the x gradient of the field at the point (i + 0.5, y).
+	// Returns the x gradient of the field at the point (i + 0.5, j).
 	public double gradient_x(int i, int j) {
 		return (this.get_index(i + 1, j) - this.get_index(i, j)) / this.cell_width;
 	}
@@ -240,6 +244,13 @@ internal class Field {
 	// Returns the y gradient of the field at the point (i, j + 0.5).
 	public double gradient_y(int i, int j) {
 		return (this.get_index(i, j + 1) - this.get_index(i, j)) / this.cell_height;
+	}
+
+	// Returns the gradient of the field at the point (i + 0.5, j + 0.5).
+	public Util.Vector gradient(int i, int j) {
+		return Util.Vector(
+			0.5 * (this.gradient_x(i, j) + this.gradient_x(i, j + 1)),
+			0.5 * (this.gradient_y(i, j) + this.gradient_y(i + 1, j)));
 	}
 
 	public double laplacian(int i, int j) {

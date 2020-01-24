@@ -34,6 +34,15 @@ internal struct Vector {
 		return Math.hypot(this.x, this.y);
 	}
 
+	public Vector clamp(double len) {
+		if (this.norm() > len) {
+			return this.unit().scale(len);
+		}
+		else {
+			return this;
+		}
+	}
+
 	public Vector negate() {
 		return Vector(-this.x, -this.y);
 	}
@@ -125,6 +134,15 @@ internal struct Vector3 {
 
 	public double norm() {
 		return Math.hypot(Math.hypot(this.x, this.y), this.z);
+	}
+
+	public Vector3 clamp(double len) {
+		if (this.norm() > len) {
+			return this.unit().scale(len);
+		}
+		else {
+			return this;
+		}
 	}
 
 	public Vector3 negate() {

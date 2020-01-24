@@ -243,23 +243,51 @@ internal class VectorField {
 
 	public VectorField project() {
 		VectorField result = new VectorField.clone(this);
-		VectorField laplacian_field = new VectorField(
-			this.count_x, this.count_y,
-			this._field_x.width, this._field_x.height,
-			FieldBoundary.OPEN, FieldBoundary.OPEN,
+		Field pressure = new Field(
+			this.count_x + 1, this.count_y + 1,
+			this.width + this.cell_width, this.height + this.cell_height,
 			FieldBoundary.OPEN, FieldBoundary.OPEN);
-		return this.project_in_field(ref result, ref laplacian_field);
+		Field divergence = new Field.clone(pressure);
+		return this.project_in_field(ref result, ref pressure, ref divergence);
 	}
 
 	// Finds the divergence-free part of this vector field.
 	public VectorField project_in_field(
 			ref VectorField result,
-			ref VectorField laplacian_field) {
+			ref Field pressure,
+			ref Field divergence) {
 		assert(result.compatible(this));
 		assert(result.compatible_boundaries(this));
-		assert(laplacian_field.compatible(this));
-		// We will calculate the curl of the curl of this vector field, and
-		// store it in the `laplacian_field` variable.
+		// TODO: Eliminate the magic number tolerance here.
+		assert(
+			pressure.count_x == this.count_x + 1
+			&& pressure.count_y == this.count_y + 1);
+		assert(
+			Math.fabs(pressure.width - this.width - this.cell_width) < 0.01 * this.cell_width
+			&& Math.fabs(pressure.height - this.height - this.cell_height) < 0.01 * this.cell_height);
+		assert(
+			pressure.boundary_x == FieldBoundary.OPEN
+			&& pressure.boundary_y == FieldBoundary.OPEN);
+		assert(pressure.compatible(divergence));
+
+		for (int j = 0; j < divergence.count_y; ++j) {
+			for (int i = 0; i < divergence.count_x; ++i) {
+				divergence.set_index(i, j, this.divergence(i - 1, j - 1));
+			}
+		}
+		divergence.poisson_solve_in_field(ref pressure);
+		for (int j = 0; j < result.count_y; ++j) {
+			for (int i = 0; i < result.count_x; ++i) {
+				result.set_index(i, j, this.get_index(i, j).sub(pressure.gradient(i, j)));
+			}
+		}
+		result.update_boundaries();
+		return result;
+		// TODO: Remove this.
+		// An alternate method of projecting the field that doesn't work as
+		// well, but has the advantage of more naturally respecting the boundary
+		// conditions.
+		/*
 		for (int j = 1; j < this._field_x.vals.length[1] - 1; ++j) {
 			for (int i = 1; i < this._field_x.vals.length[0] - 1; ++i) {
 				double v_xx = -1 / (4 * Util.square(this._field_x.cell_height))
@@ -297,6 +325,7 @@ internal class VectorField {
 			}
 		}
 		return laplacian_field.poisson_solve_in_field(ref result);
+		*/
 	}
 
 	public void update_boundaries() {

@@ -25,9 +25,7 @@
 * Add some kind of drag term to the field (that gradually brings the field back
   to zero if left alone).
 ## Code quality
-* Find a way to use the Laplacian/divergence functions in the various Gauss-
-  Seidel algorithms. Maybe the code will be optimized down to something similar
-  to what is there now.
+* Use `nx` and `ny` variables instead of using `.length[0]` all over the place.
 * Add sealed modifier to most classes.
 * Make many classes compact.
 * Explicit access modifiers on every field.
