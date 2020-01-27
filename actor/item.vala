@@ -95,7 +95,7 @@ internal class Item : Clutter.Actor {
 		});
 	}
 
-	public void update() {
+	public void update_visuals() {
 		this.update_actor_position();
 		this.update_actor_rotation();
 		this.update_actor_scale();

@@ -49,55 +49,16 @@ internal class Air : Clutter.Actor {
 		}
 	}
 
-	private void on_draw(Cairo.Context ctx) {
-		Physics.VectorField vel_field = this._air_physics.velocity;
-
-		// Clear the existing canvas content.
-		ctx.save();
-		ctx.set_operator(Cairo.Operator.SOURCE);
-		ctx.set_source_rgba(0, 0, 0, 0);
-		ctx.paint();
-		ctx.restore();
-
-		// Draw smoke.
-		ctx.save();
-		for (int j = 0; j < vel_field.count_y; ++j) {
-			ctx.save();
-			for (int i = 0; i < vel_field.count_x; ++i) {
-				double smoke = this._air_physics.smoke.get_index(i, j);
-				ctx.set_source_rgba(0, 0, 0, smoke);
-				ctx.rectangle(0, 0, vel_field.cell_width, vel_field.cell_height);
-				ctx.fill();
-				ctx.translate(vel_field.cell_width, 0);
-			}
-			ctx.restore();
-			ctx.translate(0, vel_field.cell_height);
-		}
-		ctx.restore();
-
-		// Draw velocity vectors.
-		ctx.save();
-		ctx.translate(0.5 * vel_field.cell_width, 0.5 * vel_field.cell_height);
-		ctx.new_path();
-		for (int j = 0; j < vel_field.count_y; ++j) {
-			ctx.save();
-			for (int i = 0; i < vel_field.count_x; ++i) {
-				Util.Vector vel = vel_field.get_index(i, j);
-				ctx.move_to(0, 0);
-				ctx.line_to(vel.x, vel.y);
-				ctx.translate(vel_field.cell_width, 0);
-			}
-			ctx.restore();
-			ctx.translate(0, vel_field.cell_height);
-		}
-		ctx.set_source_rgb(1, 0, 0);
-		ctx.set_line_width(2);
-		ctx.stroke();
-		ctx.restore();
+	public void update(double delta) {
+		this.update_physics(delta);
+		this.update_visuals();
 	}
 
-	public void step(double delta) {
+	public void update_physics(double delta) {
 		this._air_physics.update(delta);
+	}
+
+	public void update_visuals() {
 		if (this._canvas != null) {
 			this._canvas.invalidate();
 		}
@@ -153,6 +114,53 @@ internal class Air : Clutter.Actor {
 
 	public void inject_smoke(Util.Vector pos) {
 		this._air_physics.smoke.add_pos(pos, Air.CLICK_SMOKE_AMOUNT);
+	}
+
+	private void on_draw(Cairo.Context ctx) {
+		Physics.VectorField vel_field = this._air_physics.velocity;
+
+		// Clear the existing canvas content.
+		ctx.save();
+		ctx.set_operator(Cairo.Operator.SOURCE);
+		ctx.set_source_rgba(0, 0, 0, 0);
+		ctx.paint();
+		ctx.restore();
+
+		// Draw smoke.
+		ctx.save();
+		for (int j = 0; j < vel_field.count_y; ++j) {
+			ctx.save();
+			for (int i = 0; i < vel_field.count_x; ++i) {
+				double smoke = this._air_physics.smoke.get_index(i, j);
+				ctx.set_source_rgba(0, 0, 0, smoke);
+				ctx.rectangle(0, 0, vel_field.cell_width, vel_field.cell_height);
+				ctx.fill();
+				ctx.translate(vel_field.cell_width, 0);
+			}
+			ctx.restore();
+			ctx.translate(0, vel_field.cell_height);
+		}
+		ctx.restore();
+
+		// Draw velocity vectors.
+		ctx.save();
+		ctx.translate(0.5 * vel_field.cell_width, 0.5 * vel_field.cell_height);
+		ctx.new_path();
+		for (int j = 0; j < vel_field.count_y; ++j) {
+			ctx.save();
+			for (int i = 0; i < vel_field.count_x; ++i) {
+				Util.Vector vel = vel_field.get_index(i, j);
+				ctx.move_to(0, 0);
+				ctx.line_to(vel.x, vel.y);
+				ctx.translate(vel_field.cell_width, 0);
+			}
+			ctx.restore();
+			ctx.translate(0, vel_field.cell_height);
+		}
+		ctx.set_source_rgb(1, 0, 0);
+		ctx.set_line_width(2);
+		ctx.stroke();
+		ctx.restore();
 	}
 }
 

@@ -85,7 +85,7 @@ public class Main : Clutter.Actor {
 		this._timer = new Timer();
 		this._timeout = new TimeoutSource((int) (Main.DELTA * 1000));
 		this._timeout.set_callback(() => {
-			this.on_step(this._timer.elapsed());
+			this.on_update(this._timer.elapsed());
 			this._timer.start();
 			return Source.CONTINUE;
 		});
@@ -205,7 +205,7 @@ public class Main : Clutter.Actor {
 		this._items = this.generate_items();
 		foreach (Actor.Item item in this._items) {
 			this._item_parent.add_child(item);
-			item.update();
+			item.update_visuals();
 		}
 	}
 
@@ -316,9 +316,9 @@ public class Main : Clutter.Actor {
 		this.create_scene((double) new_width, (double) new_height);
 	}
 
-	private void on_step(double delta) {
+	private void on_update(double delta) {
 		delta = delta.clamp(0, 2 * Main.DELTA);
-		this._air.step(delta);
+		this._air.update(delta);
 	}
 
 	private void on_mouse_move(
