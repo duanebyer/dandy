@@ -11,7 +11,8 @@ internal class Air : Clutter.Actor {
 	private Util.Vector _prev_mouse_pos;
 	private bool _mouse_enter;
 
-	private const double DELTA = 0.05;
+	// TODO: Rename some of these constants, and possibly move some to the Main
+	// class.
 	private const double CELL_SIZE = 50;
 	private const double VISCOSITY = 5e2;
 	private const double DAMPING = 0.5;
@@ -33,56 +34,6 @@ internal class Air : Clutter.Actor {
 			width, height,
 			CELL_SIZE);
 		this._canvas = null;
-
-		// The timer is used to provide more precise deltas to the simulation.
-		this._timer = new Timer();
-		this._timeout = new TimeoutSource((int) (Air.DELTA * 1000));
-		this._timer.start();
-		this._timeout.set_callback(() => {
-			this.on_step(this._timer.elapsed());
-			this._timer.start();
-			return Source.CONTINUE;
-		});
-		this._timeout.attach(null);
-
-		// Add wind on a mouse movement over the air.
-		this._mouse_timer = new Timer();
-		this._mouse_enter = false;
-
-		base.set_reactive(true);
-		base.enter_event.connect((actor, e) => {
-			this._mouse_enter = true;
-			return false;
-		});
-		base.motion_event.connect((actor, e) => {
-			float mouse_x;
-			float mouse_y;
-			base.transform_stage_point(e.x, e.y, out mouse_x, out mouse_y);
-			Util.Vector mouse_pos = Util.Vector(mouse_x, mouse_y);
-			if (this._mouse_enter) {
-				this._mouse_enter = false;
-				this._prev_mouse_pos = mouse_pos;
-				this._mouse_timer.start();
-			}
-			else {
-				double delta = this._mouse_timer.elapsed();
-				this.on_mouse_move(mouse_pos, this._prev_mouse_pos, delta);
-				this._prev_mouse_pos = mouse_pos;
-				this._mouse_timer.start();
-			}
-			return false;
-		});
-
-		// Add smoke when right-clicked.
-		base.button_press_event.connect((actor, e) => {
-			float mouse_x;
-			float mouse_y;
-			base.transform_stage_point(e.x, e.y, out mouse_x, out mouse_y);
-			Util.Vector mouse_pos = Util.Vector(mouse_x, mouse_y);
-			this.on_mouse_press(mouse_pos);
-			return false;
-		});
-
 		if (draw) {
 			this._canvas = new Clutter.Canvas() {
 				width = pix_width,
@@ -145,21 +96,20 @@ internal class Air : Clutter.Actor {
 		ctx.restore();
 	}
 
-	public void on_step(double delta) {
-		delta = delta.clamp(0, 2 * Air.DELTA);
+	public void step(double delta) {
 		this._air_physics.update(delta);
 		if (this._canvas != null) {
 			this._canvas.invalidate();
 		}
 	}
 
-	public void on_mouse_move(
-			Util.Vector pos,
-			Util.Vector prev_pos,
+	public void inject_wind(
+			Util.Vector pos_start,
+			Util.Vector pos_end,
 			double delta) {
 		Physics.VectorField vel_field = this._air_physics.velocity;
-		Util.Vector delta_pos = pos.sub(prev_pos);
-		if (delta_pos.norm() == 0 || delta <= 0) {
+		Util.Vector pos_delta = pos_end.sub(pos_start);
+		if (pos_delta.norm() == 0 || delta <= 0) {
 			return;
 		}
 		int padding = (int) Math.ceil(
@@ -169,17 +119,17 @@ internal class Air : Clutter.Actor {
 		// Find the starting and ending cells of the motion.
 		int i1;
 		int j1;
-		vel_field.local_cell_pos(prev_pos, out i1, out j1);
+		vel_field.local_cell_pos(pos_start, out i1, out j1);
 		int i2;
 		int j2;
-		vel_field.local_cell_pos(pos, out i2, out j2);
+		vel_field.local_cell_pos(pos_end, out i2, out j2);
 		int i_min = int.min(i1, i2) - padding;
 		int i_max = int.max(i1, i2) + padding;
 		int j_min = int.min(j1, j2) - padding;
 		int j_max = int.max(j1, j2) + padding;
 		double sigma = Air.MOTION_WIND_RADIUS;
 		double peak = 0.5 * Air.MOTION_WIND_STRENGTH;
-		Util.Vector velocity = delta_pos.scale(1 / delta)
+		Util.Vector velocity = pos_delta.scale(1 / delta)
 			.clamp(Air.MOTION_MAX_SPEED);
 		for (int i = i_min; i <= i_max; ++i) {
 			for (int j = j_min; j <= j_max; ++j) {
@@ -188,12 +138,12 @@ internal class Air : Clutter.Actor {
 				Util.Vector cell_pos = Util.Vector(
 					(i + 0.5) * vel_field.cell_width,
 					(j + 0.5) * vel_field.cell_height);
-				Util.Vector r = cell_pos.sub(prev_pos);
-				Util.Vector r_par = r.project(delta_pos);
+				Util.Vector r = cell_pos.sub(pos_start);
+				Util.Vector r_par = r.project(pos_delta);
 				Util.Vector r_perp = r.sub(r_par);
 				r = Util.Vector(r_par.norm(), r_perp.norm());
 				double x_factor = Math.erf(r.x / (Math.sqrt(2) * sigma))
-					- Math.erf((r.x - delta_pos.norm()) / (Math.sqrt(2) * sigma));
+					- Math.erf((r.x - pos_delta.norm()) / (Math.sqrt(2) * sigma));
 				double y_factor = Math.exp(-0.5 * r.y * r.y / (sigma * sigma));
 				double factor = peak * x_factor * y_factor;
 				vel_field.add_index(i, j, velocity.scale(factor));
@@ -201,7 +151,7 @@ internal class Air : Clutter.Actor {
 		}
 	}
 
-	public void on_mouse_press(Util.Vector pos) {
+	public void inject_smoke(Util.Vector pos) {
 		this._air_physics.smoke.add_pos(pos, Air.CLICK_SMOKE_AMOUNT);
 	}
 }

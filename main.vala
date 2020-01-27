@@ -3,12 +3,13 @@ namespace Dandy {
 using Dandy;
 
 public class Main : Clutter.Actor {
+	private const double DELTA = 0.05;
+
 	private Gee.ArrayList<Actor.Item> _items;
 	private Actor.Air _air;
 	private Clutter.Actor _background;
 	private Clutter.Actor _item_parent;
 	private Util.Camera _camera;
-	private TimeoutSource _timeout;
 	private bool _scene_exists;
 
 	private Util.Bounds3 _scene_bounds;
@@ -17,6 +18,15 @@ public class Main : Clutter.Actor {
 	private double _scene_focus_z;
 	private double _hill_curvature;
 	private Util.Vector3 _hill_vertex;
+
+	// The timer provides more accurate deltas to the simulation.
+	private Timer _timer;
+	private TimeoutSource _timeout;
+	
+	// Variables used for tracking the mouse motion.
+	private bool _mouse_enter;
+	private Util.Vector _prev_mouse_pos;
+	private Timer _mouse_timer;
 
 	private double hill_height(double x, double z) {
 		return this._hill_vertex.y + this._hill_curvature * (
@@ -33,16 +43,55 @@ public class Main : Clutter.Actor {
 		this.create_scene(this.get_width(), this.get_height());
 
 		// Connect signals.
-		this.allocation_changed.connect((e) => {
+		base.set_reactive(true);
+		base.allocation_changed.connect((e) => {
 			this.on_resize(e.get_width(), e.get_height());
 		});
 
-		this._timeout = new TimeoutSource(30);
+		this._mouse_enter = true;
+		this._mouse_timer = new Timer();
+		base.enter_event.connect((e) => {
+			this._mouse_enter = true;
+			return false;
+		});
+		base.motion_event.connect((e) => {
+			float mouse_x;
+			float mouse_y;
+			base.transform_stage_point(e.x, e.y, out mouse_x, out mouse_y);
+			Util.Vector mouse_pos = Util.Vector(mouse_x, mouse_y);
+			if (this._mouse_enter) {
+				this._mouse_enter = false;
+				this._prev_mouse_pos = mouse_pos;
+				this._mouse_timer.start();
+			}
+			else {
+				double delta = this._mouse_timer.elapsed();
+				this.on_mouse_move(this._prev_mouse_pos, mouse_pos, delta);
+				this._prev_mouse_pos = mouse_pos;
+				this._mouse_timer.start();
+			}
+			return false;
+		});
+		base.button_press_event.connect((e) => {
+			float mouse_x;
+			float mouse_y;
+			base.transform_stage_point(e.x, e.y, out mouse_x, out mouse_y);
+			Util.Vector mouse_pos = Util.Vector(mouse_x, mouse_y);
+			this.on_mouse_press(mouse_pos);
+			return false;
+		});
+
+		// Set up timers.
+		this._timer = new Timer();
+		this._timeout = new TimeoutSource((int) (Main.DELTA * 1000));
 		this._timeout.set_callback(() => {
-			this.on_step();
+			this.on_step(this._timer.elapsed());
+			this._timer.start();
 			return Source.CONTINUE;
 		});
 		this._timeout.attach(null);
+
+		this._timer.start();
 	}
 
 	private void create_scene(double width, double height) {
@@ -267,7 +316,20 @@ public class Main : Clutter.Actor {
 		this.create_scene((double) new_width, (double) new_height);
 	}
 
-	private void on_step() {
+	private void on_step(double delta) {
+		delta = delta.clamp(0, 2 * Main.DELTA);
+		this._air.step(delta);
+	}
+
+	private void on_mouse_move(
+			Util.Vector prev_pos,
+			Util.Vector pos,
+			double delta) {
+		this._air.inject_wind(prev_pos, pos, delta);
+	}
+
+	private void on_mouse_press(Util.Vector pos) {
+		this._air.inject_smoke(pos);
 	}
 }
 
