@@ -82,7 +82,7 @@ internal class Item : Clutter.Actor {
 		this._bounds = Util.Bounds(0, 0, 0, 0);
 		this._resolution_factor = 1;
 		this._billboard_mode = BillboardMode.FACING_CAMERA;
-		
+
 		base.set_content(this._image);
 		base.set_size(0, 0);
 		base.set_pivot_point(0, 0);
