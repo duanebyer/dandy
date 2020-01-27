@@ -7,7 +7,7 @@ using Dandy;
 // focus, and so on.
 internal class Item : Clutter.Actor {
 	private Util.Vector3 _world_pos;
-	private double _world_rot;
+	private double _world_angle;
 	private double _screen_z;
 
 	private Util.Camera _camera;
@@ -42,10 +42,10 @@ internal class Item : Clutter.Actor {
 		}
 	}
 
-	public double world_rot {
-		get { return this._world_rot; }
+	public double world_angle {
+		get { return this._world_angle; }
 		set {
-			this._world_rot = value;
+			this._world_angle = value;
 			this.update_actor_rotation();
 		}
 	}
@@ -70,7 +70,7 @@ internal class Item : Clutter.Actor {
 
 	public Item(Util.Camera camera) {
 		this._world_pos = Util.Vector3(0, 0, 0);
-		this._world_rot = 0;
+		this._world_angle = 0;
 		this._screen_z = 0;
 
 		this._camera = camera;
@@ -227,7 +227,7 @@ internal class Item : Clutter.Actor {
 	private void update_actor_rotation() {
 		base.set_rotation_angle(
 			Clutter.RotateAxis.Z_AXIS,
-			Math.PI / 180 * this._world_rot);
+			Math.PI / 180 * this._world_angle);
 	}
 
 	private void update_actor_scale() {
