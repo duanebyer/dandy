@@ -10,6 +10,9 @@ internal class Item : Clutter.Actor {
 	private double _world_angle;
 	private double _screen_z;
 
+	private Util.Vector3 _world_vel;
+	private double _world_angle_vel;
+
 	private Util.Camera _camera;
 
 	// Drawing is done in the following stages:
@@ -50,6 +53,16 @@ internal class Item : Clutter.Actor {
 		}
 	}
 
+	public Util.Vector3 world_vel {
+		get { return this._world_vel; }
+		set { this._world_vel = value; }
+	}
+
+	public double world_angle_vel {
+		get { return this._world_angle_vel; }
+		set { this._world_angle_vel = value; }
+	}
+
 	public BillboardMode billboard_mode {
 		get { return this._billboard_mode; }
 		set {
@@ -73,6 +86,9 @@ internal class Item : Clutter.Actor {
 		this._world_angle = 0;
 		this._screen_z = 0;
 
+		this._world_vel = Util.Vector3(0, 0, 0);
+		this._world_angle_vel = 0;
+
 		this._camera = camera;
 
 		this._base_image = new Cairo.ImageSurface(DrawUtil.FORMAT_CAIRO, 0, 0);
@@ -95,10 +111,32 @@ internal class Item : Clutter.Actor {
 		});
 	}
 
+	public void update(Physics.Air air, double delta) {
+		this.update_physics(air, delta);
+		this.update_visuals();
+	}
+
+	public void update_physics(Physics.Air air, double delta) {
+		Util.Vector3 accel = this.accel(air);
+		double angle_accel = this.angle_accel(air);
+		this._world_vel = this._world_vel.add(accel.scale(delta));
+		this._world_angle_vel = this._world_angle_vel + angle_accel * delta;
+		this._world_pos = this._world_pos.add(this._world_vel.scale(delta));
+		this._world_angle = this._world_angle + this._world_angle_vel * delta;
+	}
+
 	public void update_visuals() {
 		this.update_actor_position();
 		this.update_actor_rotation();
 		this.update_actor_scale();
+	}
+
+	protected virtual Util.Vector3 accel(Physics.Air air) {
+		return Util.Vector3(0, 0, 0);
+	}
+
+	protected virtual double angle_accel(Physics.Air air) {
+		return 0;
 	}
 
 	protected void update_base_image(

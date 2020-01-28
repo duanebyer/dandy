@@ -319,6 +319,9 @@ public class Main : Clutter.Actor {
 	private void on_update(double delta) {
 		delta = delta.clamp(0, 2 * Main.DELTA);
 		this._air.update(delta);
+		foreach (Actor.Item item in this._items) {
+			item.update(this._air.physics, delta);
+		}
 	}
 
 	private void on_mouse_move(
